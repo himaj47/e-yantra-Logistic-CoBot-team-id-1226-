@@ -9,7 +9,13 @@ slam_toolbox:
     ceres_dogleg_type: TRADITIONAL_DOGLEG
     ceres_loss_function: None
 
-    #Add ROS Parameters Here !!
+    # ROS Parameters
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    mode: localization #mapping
+
 
     debug_logging: false
     throttle_scans: 1
