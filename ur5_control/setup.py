@@ -22,7 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        "task1b = ur5_control.task1b_boiler_plate:main",
+        "task1b = ur5_control.task1b_v2:main",
         "task1b1 = ur5_control.task1b:main",
         ],
     },
