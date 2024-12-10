@@ -32,6 +32,8 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import TransformStamped
 from scipy.spatial.transform import Rotation as R
 import tf_transformations
+from sensor_msgs.msg import CompressedImage 
+
 from geometry_msgs.msg import Quaternion
 ##################### FUNCTION DEFINITIONS #######################
 
@@ -165,6 +167,7 @@ class aruco_tf(Node):
 
         self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
         self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
+        self.publisher_ = self.create_publisher(CompressedImage, 'camera/image/imageLB1226', 10)
 
         self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
@@ -314,9 +317,10 @@ class aruco_tf(Node):
                 except Exception as e:
                     self.get_logger().warn(f"Transform lookup failed: {str(e)}")
 
+            compressed_image = self.bridge.cv2_to_compressed_imgmsg(self.cv_image, dst_format='jpeg')
+            self.publisher_.publish(compressed_image)
 
-
-            cv2.imshow('Detected ArUco markers with Axes', self.cv_image)
+            # cv2.imshow('Detected ArUco markers with Axes', self.cv_image)
             cv2.waitKey(1)
 
 ##################### MAIN FUNCTION #######################
