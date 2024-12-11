@@ -21,7 +21,7 @@
 #                   Subscribing Topics - [ /camera/color/image_raw, /camera/aligned_depth_to_color/image_raw ]
 
 ################### IMPORT MODULES #######################
-
+import math
 import rclpy
 import cv2
 import numpy as np
@@ -32,10 +32,27 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import TransformStamped
 from scipy.spatial.transform import Rotation as R
 import tf_transformations
-from sensor_msgs.msg import CompressedImage 
-
 from geometry_msgs.msg import Quaternion
+from sensor_msgs.msg import CompressedImage 
+from sensor_msgs.msg import Image
+
+
 ##################### FUNCTION DEFINITIONS #######################
+def rotation_matrix_to_euler_angles(R):
+    # Check if pitch is close to ±90 degrees
+    sy = math.sqrt(R[0,0] * R[0,0] + R[1,0] * R[1,0])
+    singular = sy < 1e-6
+
+    if not singular:
+        roll = math.atan2(R[2,1], R[2,2])
+        pitch = math.atan2(-R[2,0], sy)
+        yaw = math.atan2(R[1,0], R[0,0])
+    else:
+        roll = math.atan2(-R[1,2], R[1,1])
+        pitch = math.atan2(-R[2,0], sy)
+        yaw = 0
+
+    return np.array([roll, pitch, yaw])
 
 def calculate_rectangle_area(coordinates):
     '''
@@ -105,7 +122,9 @@ def detect_aruco(image, cam_mat, dist_mat):
             angle_aruco = (0.788 * rvec[0][0][0]) - ((rvec[0][0][0] ** 2) / 3160)
             angle_aruco_1 = (0.788 * rvec[0][0][1]) - ((rvec[0][0][1] ** 2) / 3160)
             angle_aruco_2 = (0.788 * rvec[0][0][2]) - ((rvec[0][0][2] ** 2) / 3160)
-            print(f"raw quaternion values {rvec}")
+           
+            
+            # print(f"raw quaternion values {rvec}")
             angle_aruco_list.append(angle_aruco)
             angle_aruco_list_1.append(angle_aruco_1)
             angle_aruco_list_2.append(angle_aruco_2)
@@ -119,6 +138,7 @@ def detect_aruco(image, cam_mat, dist_mat):
     return center_aruco_list, distance_from_rgb_list, angle_aruco_list,angle_aruco_list_1,angle_aruco_list_2, width_aruco_list, markerIds, markerCorners
 
 ##################### CLASS DEFINITION #######################
+
 def quaternion_multiply(q0, q1):
     """
     Multiplies two quaternions.
@@ -177,7 +197,7 @@ class aruco_tf(Node):
 
         self.cv_image = None
         self.depth_image = None
-
+  
     def depthimagecb(self, data):
         '''
         Callback function for aligned depth camera topic.
@@ -211,12 +231,17 @@ class aruco_tf(Node):
 
         center_aruco_list, distance_from_rgb_list, angle_aruco_list,angle_aruco_list_1,angle_aruco_list_2, width_aruco_list, ids, markerCorners = detect_aruco(self.cv_image, cam_mat, dist_mat)
 
-        if ids is not None:
+        if ids is not None and len(center_aruco_list) == len(ids):  # Add length check
             for i in range(len(ids)):
                 rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorners[i], 0.15, cam_mat, dist_mat)
                 cv2.drawFrameAxes(self.cv_image, cam_mat, dist_mat, rvec, tvec, 0.9)
                 
-                angle_aruco = (0.788*rvec[0][0][2]) - ((rvec[0][0][2]**2)/3160)
+                # angle_aruco = (0.788*rvec[0][0][2]) - ((rvec[0][0][2]**2)/3160)
+                rotationmatrix, _ = cv2.Rodrigues(rvec[0][0])
+                angle_aruco = rotation_matrix_to_euler_angles(rotationmatrix)
+                angle_aruco = angle_aruco[2]
+                
+                print(f"angle aruco {angle_aruco}")
 
                 # print(angle_aruco_list)
                 if i < len(angle_aruco_list):
@@ -230,11 +255,9 @@ class aruco_tf(Node):
                     corrected_angle_2 = 0  # or some default value
                     print(f"Warning: Index {i} out of range for angle_aruco_list")
                 
-                print(corrected_angle)
-                roll = 0
-                pitch = 0
-                yaw_offset=-np.pi*0
-                print(f"current id is : {ids[i]}")
+                # print(corrected_angle)
+               
+                # print(f"current id is : {ids[i]}")
             # Convert the corrected yaw angle to quaternions
                 # quaternion = R.from_euler('xyz', [roll, pitch, corrected_angle+yaw_offset]).as_quat()
                 # quaternion_1 = R.from_euler('zyx', [roll, pitch, corrected_angle_1+yaw_offset]).as_quat()
@@ -250,7 +273,7 @@ class aruco_tf(Node):
                     continue
 
                 distance_from_depth = depth_value /1000.0# Convert depth to meters
-                print(distance_from_depth)
+                # print(distance_from_depth)
                 # Rectify coordinates
                 y = distance_from_depth * (1280 - cX - 640) / 931.1829833984375
                 z = distance_from_depth * (720 - cY - 360) / 931.1829833984375
@@ -279,7 +302,7 @@ class aruco_tf(Node):
                 t.transform.translation.x = x
                 t.transform.translation.y = y
                 t.transform.translation.z = z
-                print(f"x,y,z { t.transform.translation.x},{ t.transform.translation.y},{ t.transform.translation.z}")
+                # print(f"x,y,z { t.transform.translation.x},{ t.transform.translation.y},{ t.transform.translation.z}")
                 # rmat, _ = cv2.Rodrigues(rvec[0][0])
                 # r = R.from_matrix(rmat)
 
@@ -287,17 +310,42 @@ class aruco_tf(Node):
                 # quaternion = r.as_quat()
 
                             # Combination 1_1
-                quaternion_2 = tf_transformations.quaternion_from_euler(0, 0, angle_aruco)
-                print(f"quaternions for {quaternion_2}")
-                t.transform.rotation.x = quaternion_2[0]
-                t.transform.rotation.y = quaternion_2[1]
-                t.transform.rotation.z = quaternion_2[2]
-                t.transform.rotation.w = quaternion_2[3]
-                
-               
-                print(f"x,y,z,w { t.transform.rotation.x},{ t.transform.rotation.y},{ t.transform.rotation.z},{t.transform.rotation.w}")
+   # Original roll, pitch, yaw values
+                roll = np.pi/2
+                pitch = -angle_aruco
+                yaw = np.pi/2
 
-                self.br.sendTransform(t)        
+                # Initialize quaternion array
+                quaternion = [0.0, 0.0, 0.0, 0.0]
+
+                # Calculate quaternion components directly
+                try:
+                
+                    quaternion=tf_transformations.quaternion_from_euler(roll, pitch, yaw)
+                    print(f"quaternions {quaternion}")
+                except Exception as e:
+                    self.get_logger().error(f"Error calculating quaternion: {str(e)}")
+                    continue
+
+                try:
+                    # Convert quaternion to scipy rotation
+                    quaternion = R.from_quat(quaternion)
+                    offset = R.from_euler('y', np.pi/4-0.028, degrees=False)
+                    quaternion_2 = offset * quaternion
+                    quaternion_2 = quaternion_2.as_quat()
+                    print(f"adjusted quaternions {quaternion_2}")
+
+                except Exception as e:
+                    self.get_logger().error(f"Error applying rotation correction: {str(e)}")
+                    continue
+
+                # Apply quaternion to transform
+                t.transform.rotation.x = float(quaternion_2[0])
+                t.transform.rotation.y = float(quaternion_2[1]) 
+                t.transform.rotation.z = float(quaternion_2[2])
+                t.transform.rotation.w = float(quaternion_2[3])
+
+                self.br.sendTransform(t)
     
                 try:
                     trans = self.tf_buffer.lookup_transform('base_link', f'cam_{ids[i][0]}', rclpy.time.Time())
@@ -306,20 +354,33 @@ class aruco_tf(Node):
                     obj_t.header.frame_id = 'base_link'
                     obj_t.child_frame_id = f'obj_{ids[i][0]}'
                     obj_t.transform.translation = trans.transform.translation
-                    quaternion_2 = tf_transformations.quaternion_from_euler(np.pi/2, 0, -angle_aruco + np.pi/2)
-                    print(f"quaternions for {quaternion_2}")
+                    # quaternion_2 = tf_transformations.quaternion_from_euler(0,0, -angle_aruco)
+                    # # print(f"quaternions for {quaternion_2}")
+                    
+                    
 
-                    obj_t.transform.rotation.x = quaternion_2[0]
-                    obj_t.transform.rotation.y = quaternion_2[1]
-                    obj_t.transform.rotation.z = quaternion_2[2]
-                    obj_t.transform.rotation.w = quaternion_2[3]
+
+                    # # Convert roll, pitch, yaw to quaternion
+                    # quaternion_initial = tf_transformations.quaternion_from_euler(roll, pitch, yaw)
+                    # quaternion=[0,0,0,0]
+                    # # quaternion[0]=quaternion_initial[1]
+                    # # quaternion[1]=quaternion_initial[2]
+                    # # quaternion[2]=quaternion_initial[3]
+                    # # quaternion[3]=quaternion_initial[0]
+
+                    
+
+                    # # # Use quaternion multiplication to combine the initial quaternion and the correction
+                    # print(f"quaternions {quaternion}")
+                    
+                   
+                    obj_t.transform.rotation = trans.transform.rotation
                     self.br.sendTransform(obj_t)
                 except Exception as e:
                     self.get_logger().warn(f"Transform lookup failed: {str(e)}")
 
             compressed_image = self.bridge.cv2_to_compressed_imgmsg(self.cv_image, dst_format='jpeg')
             self.publisher_.publish(compressed_image)
-
             # cv2.imshow('Detected ArUco markers with Axes', self.cv_image)
             cv2.waitKey(1)
 
@@ -335,3 +396,8 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    
+    
+    
+    
+    

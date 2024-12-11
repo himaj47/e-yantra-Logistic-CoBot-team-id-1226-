@@ -43,10 +43,10 @@ amcl:
     always_reset_initial_pose: False
     first_map_only: False
     initial_pose:
-      x: 1.84
-      y: -9.05
-      z: 0.1
-      yaw: 3.14
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
 
 amcl_map_client:
   ros__parameters:
@@ -55,6 +55,7 @@ amcl_map_client:
 amcl_rclcpp_node:
   ros__parameters:
     use_sim_time: True
+
 
 bt_navigator:
   ros__parameters:

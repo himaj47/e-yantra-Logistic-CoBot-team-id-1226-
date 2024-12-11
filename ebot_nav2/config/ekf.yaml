@@ -236,3 +236,22 @@ ekf_filter_node:
                                       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9,   0.0,
                                       0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
 
+    map_frame: map                   # map frame define
+    odom_frame: odom                 # odom frame define
+    base_link_frame: ebot_base_link  # our ebot_base_link is the base frame
+    world_frame: odom                # Defaults to the value of odom_frame if unspecified
+
+
+    odom0: /odom_topic                     # odom topic here
+    odom0_config: [true, true, true,      # To know more about it read ekf.yaml 
+                    false, false, false,
+                    true,  true,  true,
+                    false, false, true,
+                    false, false, false]
+
+    imu0: /imu_topic                       # imu topic here
+        imu0_config: [false, false, false,   # To know more about it read ekf.yaml 
+                      true,  true,  true,
+                      false, false, false,
+                      false,  false,  false,
+                      false,  false,  false]
