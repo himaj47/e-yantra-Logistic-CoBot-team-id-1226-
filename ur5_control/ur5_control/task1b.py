@@ -227,10 +227,10 @@ class aruco_tf(Node):
         Timer function used to detect ArUco markers and publish TF.
         '''
         if self.cv_image is None :
-            self.get_logger().info("colored image recevied")
+            self.get_logger().info("colored not  image recevied")
             return
         if self.depth_image is None :
-            self.get_logger().info("depth image recevied")
+            self.get_logger().info("depth not image recevied")
             return
 
         cam_mat = np.array([[931.1829833984375, 0, 640],
@@ -238,7 +238,7 @@ class aruco_tf(Node):
                             [0, 0, 1]])
         dist_mat = np.zeros((1, 5))  # Modify based on camera calibration
 
-
+        self.get_logger().info("moving to calculations part")
         center_aruco_list, distance_from_rgb_list, angle_aruco_list,angle_aruco_list_1,angle_aruco_list_2, width_aruco_list, ids, markerCorners = detect_aruco(self.cv_image, cam_mat, dist_mat)
 
         if ids is not None and len(center_aruco_list) == len(ids):  # Add length check
