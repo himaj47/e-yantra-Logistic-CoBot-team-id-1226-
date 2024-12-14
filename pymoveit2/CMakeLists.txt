@@ -15,7 +15,6 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_joint_goal.py
     ${EXAMPLES_DIR}/ex_pose_goal.py
     ${EXAMPLES_DIR}/ex_servo.py
-    ${EXAMPLES_DIR}/task2a_oops.py
     DESTINATION lib/${PROJECT_NAME}
 )
 

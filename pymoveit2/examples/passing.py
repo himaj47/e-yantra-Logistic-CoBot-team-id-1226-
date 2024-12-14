@@ -381,7 +381,7 @@ class MoveItJointControl(Node):
                         elif task_queue[task_ptr][0] == "drop_config":
                             print("box attached: " + str(self.box_attached))
                             self.magnet_off(box_name=self.box_attached)
-                            self.remove_box(self.box_attached)
+                            # self.remove_box(self.box_attached)
 
                             if len(aruco_transforms) == 0:
                                 signal = True
