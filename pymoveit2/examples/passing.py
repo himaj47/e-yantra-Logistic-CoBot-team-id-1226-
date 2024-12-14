@@ -25,6 +25,7 @@ from tf2_msgs.msg import TFMessage
 
 import yaml
 from request_payload.srv import Payload
+from std_srvs.srv import SetBool
 
 # signal flag
 signal = True 
@@ -95,6 +96,30 @@ ur5_configs = {
 
 }
 
+class Services(Node):
+    def __init__(self):
+        super().__init__("Tf_Finder")
+
+        self.srv = self.create_service(SetBool, "/passing_service", self.handle_request)
+
+    def handle_request(self, request, response):
+        global srv
+        global placed
+
+        srv = True
+        placed = False
+        self.get_logger().info('Incoming request\nreceive: %d' % (request.data))
+
+        rate = self.create_rate(2, self.get_clock())
+
+        while not placed:
+            self.get_logger().info("Waiting for the box to be placed ...")
+            rate.sleep()
+
+        response.success = True
+        return response
+
+
 class TfFinder(Node):
     def __init__(self):
         super().__init__("Tf_Finder")
@@ -112,24 +137,7 @@ class TfFinder(Node):
         self.callback_group = ReentrantCallbackGroup()
 
         self.transform_checker = self.create_timer(0.01, self.check_transform)
-        self.srv = self.create_service(Payload, "/passing_service", self.handle_request, callback_group=self.callback_group)
-
-    def handle_request(self, request, response):
-        global srv
-        global placed
-
-        srv = True
-        self.get_logger().info('Incoming request\nreceive: %d' % (request.receive))
-
-        # rate = self.create_rate(2, self.get_clock())
-
-        # while not placed:
-        #     self.get_logger().info("Waiting for the box to be placed ...")
-        #     rate.sleep()
-
-        response.response = True
-        # placed = False
-        return response
+        
 
     # checking all necessary transforms
     def check_transform(self):
@@ -264,7 +272,7 @@ class MoveItJointControl(Node):
         # clients 
         self.gripper_control_attach = self.create_client(AttachLink, '/GripperMagnetON')
         self.gripper_control_detach = self.create_client(DetachLink, '/GripperMagnetOFF')
-        self.servo_control = self.create_client(ServoLink, '/SERVOLINK')
+        # self.servo_control = self.create_client(ServoLink, '/SERVOLINK')
 
         while not self.gripper_control_attach.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('EEF /GripperMagnetON service not available, waiting again...')
@@ -272,8 +280,8 @@ class MoveItJointControl(Node):
         while not self.gripper_control_detach.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('EEF service /GripperMagnetOFF not available, waiting again...')
 
-        while not self.servo_control.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Servo service not available, waiting again...')
+        # while not self.servo_control.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info('Servo service not available, waiting again...')
 
     # callbacks
     def mag_on_callback(self, future):
@@ -320,12 +328,12 @@ class MoveItJointControl(Node):
         future.add_done_callback(self.mag_off_callback)
         # print(f"request for magnet off for box {box_name} is sent!!")
 
-    def remove_box(self, box_name: str | None):
-        req = ServoLink.Request()
-        req.box_name =  box_name    
-        req.box_link  = 'link'       
-        future = self.servo_control.call_async(req)
-        future.add_done_callback(self.rm_box_callback)
+    # def remove_box(self, box_name: str | None):
+    #     req = ServoLink.Request()
+    #     req.box_name =  box_name    
+    #     req.box_link  = 'link'       
+    #     future = self.servo_control.call_async(req)
+    #     future.add_done_callback(self.rm_box_callback)
 
     # PID control
     def PID_controller(self, error, Kp, Kd = 0, Ki = 0):
@@ -349,7 +357,6 @@ class MoveItJointControl(Node):
         global placed
 
         if len(task_queue):
-            self.get_logger().info("entered servoinig method")
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
@@ -361,7 +368,7 @@ class MoveItJointControl(Node):
                     self.execute = False
                 
             else:
-                if srv and task_queue[task_ptr] != "placed":
+                if srv:
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0]
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1]
@@ -374,14 +381,17 @@ class MoveItJointControl(Node):
                             self.box_attached = lBoxPose["box_name"]
                             self.magnet_on(lBoxPose["box_name"])
 
-                        elif task_queue[task_ptr][0] == "rBoxPose":
+                        if task_queue[task_ptr][0] == "rBoxPose":
                             self.box_attached = rBoxPose["box_name"]
                             self.magnet_on(rBoxPose["box_name"])
 
-                        elif task_queue[task_ptr][0] == "drop_config":
+                        if task_queue[task_ptr][0] == "drop_config":
                             print("box attached: " + str(self.box_attached))
                             self.magnet_off(box_name=self.box_attached)
                             # self.remove_box(self.box_attached)
+
+                            srv = False
+                            placed = True
 
                             if len(aruco_transforms) == 0:
                                 signal = True
@@ -397,11 +407,7 @@ class MoveItJointControl(Node):
 
                         # print("ln_vel_X: " + str(ln_vel_X), "  ln_vel_Y: " + str(ln_vel_Y), "  ln_vel_Z: " + str(ln_vel_Z))
                         
-                        self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0))
-
-                else:
-                    srv = False
-                    placed = True
+                        self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
 
 
 
@@ -410,10 +416,12 @@ def main(args=None):
 
     TfFinderNode = TfFinder()
     JointControlNode = MoveItJointControl()
+    services = Services()
 
     executor = MultiThreadedExecutor()
     executor.add_node(TfFinderNode)
     executor.add_node(JointControlNode)
+    executor.add_node(services)
     executor.spin()
 
     rclpy.shutdown()
