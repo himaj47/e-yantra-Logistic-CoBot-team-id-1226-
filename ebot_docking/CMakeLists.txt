@@ -55,6 +55,7 @@ install(
 
 install(PROGRAMS
 	scripts/ebot_docking_boilerplate.py
+  scripts/latest_dock.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
