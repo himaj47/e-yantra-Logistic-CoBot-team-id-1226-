@@ -1,0 +1,16 @@
+# twist_mux:
+#   topics:
+#     - topic: /services_cmd_vel
+#       priority: 2
+#     - topic: /nav2_cmd_vel
+#       priority: 1
+#   output_topic: /cmd_vel
+#   default_timeout: 0.5
+twist_mux:
+  topics:
+    -topic: /service_cmd_vel
+     priority: 2
+    -topic: /nav2_cmd_vel
+     priority: 1
+  output_topic: /cmd_vel
+  default_timeout: 0.5

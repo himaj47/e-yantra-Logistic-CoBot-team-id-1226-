@@ -130,7 +130,8 @@ def generate_launch_description():
         default_value=os.path.join(ebot_nav2_dir, 'rviz', 'nav2_default_view.rviz'),
         description='Full path to the RVIZ config file to use')
 
-
+    # twist_mux=Node(package='twist_mux'
+    #                executable=)
     # Launch rviz
     start_rviz_cmd = Node(
         package='rviz2',

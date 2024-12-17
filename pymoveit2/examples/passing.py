@@ -26,6 +26,8 @@ from tf2_msgs.msg import TFMessage
 import yaml
 # from request_payload.srv import Payload
 from std_srvs.srv import SetBool
+from geometry_msgs.msg import Twist
+
 
 # signal flag
 signal = True 
@@ -102,6 +104,9 @@ class Services(Node):
 
         self.srv = self.create_service(SetBool, "/passing_service", self.handle_request)
 
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+    
+
     def handle_request(self, request, response):
         global srv
         global placed
@@ -109,11 +114,16 @@ class Services(Node):
         srv = True
         placed = False
         self.get_logger().info('Incoming request\nreceive: %d' % (request.data))
-
-        rate = self.create_rate(2, self.get_clock())
+       
+        rate = self.create_rate(10, self.get_clock())
 
         while not placed:
             self.get_logger().info("Waiting for the box to be placed ...")
+            self.vel=Twist()
+            self.vel.linear.x=0.0
+            self.vel.angular.z=0.0
+            self.cmd_vel_pub.publish(self.vel)
+            # response.success=False
             rate.sleep()
 
         response.success = True
@@ -220,7 +230,7 @@ class TfFinder(Node):
             task_queue.append(ur5_configs["start_config"]["position"])
             task_queue.append(ur5_configs["drop_config"]["position"])
 
-            task_queue.append("placed")
+            # task_queue.append("placed")
         
         if end:
             task_queue.append(ur5_configs["start_config"]["position"])
@@ -279,6 +289,9 @@ class MoveItJointControl(Node):
 
         while not self.gripper_control_detach.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('EEF service /GripperMagnetOFF not available, waiting again...')
+
+        # self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+    
 
         # while not self.servo_control.wait_for_service(timeout_sec=1.0):
         #     self.get_logger().info('Servo service not available, waiting again...')
