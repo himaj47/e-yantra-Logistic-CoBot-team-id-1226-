@@ -33,6 +33,10 @@ from geometry_msgs.msg import TransformStamped
 from scipy.spatial.transform import Rotation as R
 import tf_transformations
 from geometry_msgs.msg import Quaternion
+from sensor_msgs.msg import CompressedImage 
+from sensor_msgs.msg import Image
+
+
 ##################### FUNCTION DEFINITIONS #######################
 def rotation_matrix_to_euler_angles(R):
     # Check if pitch is close to ±90 degrees
@@ -183,6 +187,7 @@ class aruco_tf(Node):
 
         self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
         self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
+        self.publisher_ = self.create_publisher(CompressedImage, 'camera/image/imageLB1226', 10)
 
         self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
@@ -192,7 +197,7 @@ class aruco_tf(Node):
 
         self.cv_image = None
         self.depth_image = None
-
+  
     def depthimagecb(self, data):
         '''
         Callback function for aligned depth camera topic.
@@ -251,9 +256,7 @@ class aruco_tf(Node):
                     print(f"Warning: Index {i} out of range for angle_aruco_list")
                 
                 # print(corrected_angle)
-                roll = 0
-                pitch = 0
-                yaw_offset=-np.pi*0
+               
                 # print(f"current id is : {ids[i]}")
             # Convert the corrected yaw angle to quaternions
                 # quaternion = R.from_euler('xyz', [roll, pitch, corrected_angle+yaw_offset]).as_quat()
@@ -365,7 +368,7 @@ class aruco_tf(Node):
                     # # quaternion[2]=quaternion_initial[3]
                     # # quaternion[3]=quaternion_initial[0]
 
-                   
+                    
 
                     # # # Use quaternion multiplication to combine the initial quaternion and the correction
                     # print(f"quaternions {quaternion}")
@@ -376,8 +379,8 @@ class aruco_tf(Node):
                 except Exception as e:
                     self.get_logger().warn(f"Transform lookup failed: {str(e)}")
 
-
-
+            compressed_image = self.bridge.cv2_to_compressed_imgmsg(self.cv_image, dst_format='jpeg')
+            self.publisher_.publish(compressed_image)
             # cv2.imshow('Detected ArUco markers with Axes', self.cv_image)
             cv2.waitKey(1)
 
@@ -393,3 +396,8 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    
+    
+    
+    
+    
