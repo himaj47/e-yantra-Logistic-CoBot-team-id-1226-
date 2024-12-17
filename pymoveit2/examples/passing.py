@@ -64,6 +64,12 @@ rBoxPose = {
     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
 }
 
+# # eBotPose: to store ebot pose and orientation in quaternion 
+# eBotPose = {
+#     "position": ["rBoxPose", 0.0, 0.0, 0.0],
+#     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
+# }
+
 # EEF_link: to store EEF pose, quat and euler angles
 EEF_link = {
     "position": [0.0129, 0.5498, 0.1333],
@@ -139,6 +145,7 @@ class TfFinder(Node):
         self.EEF_target_frame = "wrist_3_link"   # EEF frame
         self.box_target_frame = "obj_"           # box frame
         self.source_frame = "base_link"
+        self.ebot_aruco_frame = "obj_12"
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
         self.task_done = [0]*15
@@ -179,6 +186,13 @@ class TfFinder(Node):
             EEF_to_base = self.tf_buffer.lookup_transform(     # EEF w.r.t. base_link
                 self.source_frame,
                 self.EEF_target_frame,
+                rclpy.time.Time()
+            )
+
+            # check for ebot aruco marker
+            ebot_aruco = self.tf_buffer.lookup_transform(     # EEF w.r.t. base_link
+                self.source_frame,
+                self.ebot_aruco_frame,
                 rclpy.time.Time()
             )
 
@@ -223,11 +237,16 @@ class TfFinder(Node):
                     self.schedule_tasks(end=True)
                     flag = True
             
-            # node.get_logger().info(str(EEF_to_base.transform.translation))
+            # self.get_logger().info(str(EEF_to_base.transform.translation))
             EEF_link["position"] = [EEF_to_base.transform.translation.x, EEF_to_base.transform.translation.y, EEF_to_base.transform.translation.z]
             EEF_link["quaternion"] = [EEF_to_base.transform.rotation.x, EEF_to_base.transform.rotation.y, EEF_to_base.transform.rotation.z, EEF_to_base.transform.rotation.w]
             EEF_link["euler_angles"] = tf_transformations.euler_from_quaternion(EEF_link["quaternion"])
-            EEF_to_base.transform
+            
+            # update drop config
+            ur5_configs["drop_config"]["position"][0] = "drop_config"
+            ur5_configs["drop_config"]["position"][1] = ebot_aruco.transform.translation.x + 0.03
+            ur5_configs["drop_config"]["position"][2] = ebot_aruco.transform.translation.y
+            ur5_configs["drop_config"]["position"][3] = -0.1
 
         except TransformException as ex:
             self.get_logger().info(
