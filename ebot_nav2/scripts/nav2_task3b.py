@@ -35,8 +35,8 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.phase1_waypoint = [
-            self.create_goal_pose(1.10, -2.55, 3.23),  # Drop pose  0.58, -2.51, 1.87
-            self.create_goal_pose(1.10, -2.55, 3.23),  # Drop pose  0.58, -2.51, 1.87
+            self.create_goal_pose(0.95, -2.54, 1.87),  # Drop pose  0.58, -2.51, 1.87
+            self.create_goal_pose(0.95, -2.54, 1.87),  # Drop pose  0.58, -2.51, 1.87
            
         ]
         self.phase2_waypoint = [
@@ -303,13 +303,14 @@ class NavigationDockingController(Node):
                 if current_waypoint == 1 and not self.actions_triggered[0]:
                     self.get_logger().info('Initiating payload pickup at waypoint 1.')
                     
-                   
-                    box_req=self.box_payload(pickup=True)  # Pick up at waypoint 1
-                    
-                    if box_req:
-                        self.get_logger().info('Task Completed Successfully ')
-                        self.actions_triggered[0] = True
-                    
+                    docking_success = self.initiate_docking(target_distance=0.08, orientation_angle=0.15, rack_number='') 
+                    if docking_success:
+                        box_req=self.box_payload(pickup=True)  # Pick up at waypoint 1
+                        
+                        if box_req:
+                            self.get_logger().info('Task Completed Successfully ')
+                            self.actions_triggered[0] = True
+                        
                         
                     # self.current_waypoint = feedback.current_waypoint+1
             
