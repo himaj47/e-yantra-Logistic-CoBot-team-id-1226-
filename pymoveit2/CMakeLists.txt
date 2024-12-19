@@ -21,8 +21,12 @@ install(PROGRAMS
 
 install(
   DIRECTORY examples/assets
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+   examples/passing.py
+   DESTINATION lib/${PROJECT_NAME}
+)
 # Setup the project
 ament_package()

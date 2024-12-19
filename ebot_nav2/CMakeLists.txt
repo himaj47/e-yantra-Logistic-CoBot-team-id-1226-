@@ -53,6 +53,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(
   PROGRAMS
     scripts/nav2_cmd.py
+    scripts/nav2_task3b.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

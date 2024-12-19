@@ -10,12 +10,12 @@
 
 
 '''
-# Team ID:          < LB#1226 >
-# Theme:            < Cosmo Logistic >
-# Author List:      < Prathmesh Atkale >
-# Filename:         < latest_dock.py >
-# Functions:        < calculate_angular_error, calculate_linear_error, controller_loop, dock_control_callback , main>
-# Global variables: < self.previous_dis, self.prev_angular_error, self.is_angular_aligned , self.desired_yaw, self.is_docking, self.docking_complete>
+# Team ID:           LB#1226 
+# Theme:             Cosmo Logistic 
+# Author List:       Prathmesh Atkale 
+# Filename:          ebot_docking_service_task2b.py 
+# Functions:         calculate_angular_error, calculate_linear_error, controller_loop, dock_control_callback , main
+
 '''
 
 # Import necessary ROS2 packages and message types

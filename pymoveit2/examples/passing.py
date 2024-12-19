@@ -151,6 +151,7 @@ class TfFinder(Node):
         self.box_target_frame = "obj_"           # box frame
         self.source_frame = "base_link"
         self.ebot_aruco_frame = "obj_12"
+        self.offset = 0.08
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
         self.task_done = [0]*15
@@ -205,7 +206,7 @@ class TfFinder(Node):
 
                     # update drop config
                     ur5_configs["drop_config"]["position"][0] = "drop_config"
-                    ur5_configs["drop_config"]["position"][1] = ebot_aruco.transform.translation.x + 0.03
+                    ur5_configs["drop_config"]["position"][1] = ebot_aruco.transform.translation.x + self.offset
                     ur5_configs["drop_config"]["position"][2] = ebot_aruco.transform.translation.y
                     ur5_configs["drop_config"]["position"][3] = -0.1
 

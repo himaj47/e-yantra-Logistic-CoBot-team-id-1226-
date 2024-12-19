@@ -3,9 +3,9 @@
 # Team ID:          [ LB#1226 ]
 # Theme:            [ Cosmo Logistic ]
 # Author List:      [ Prathmesh Atkale ]
-# Filename:         [ nav2_latest.py ]
-# Functions:        [ create_goal_pose, initiate_payload_action ,initiate_docking,set_initial_pose, execute_navigation, main]
-# Global variables: [ self.current_pose ,self.phase1_waypoint,  self.phase2_waypoint, self.actions_triggered, self.docking_in_progress]
+# Filename:         [ ebot_nav2_cmd_task3b.py ]
+# Functions:        [ create_goal_pose, initiate_payload_action ,box_payload,initiate_docking,set_initial_pose, execute_navigation, main]
+# Global variables: [passed_point]
 '''
 
 ################### IMPORT MODULES #######################
@@ -35,12 +35,12 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.phase1_waypoint = [
-            self.create_goal_pose(0.95, -2.54, 1.87),  # Drop pose  0.58, -2.51, 1.87
-            self.create_goal_pose(0.95, -2.54, 1.87),  # Drop pose  0.58, -2.51, 1.87
+            self.create_goal_pose(0.95, -2.54, 1.87),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.95, -2.54, 1.87),  # recieve pose  0.95, -2.54, 1.87
            
         ]
         self.phase2_waypoint = [
-            self.create_goal_pose( 2.42,  2.55, -1.57),  # Conveyor 2  2.72, 2.88, -1.27
+            self.create_goal_pose( 2.42,  2.55, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
             self.create_goal_pose( 2.42,  2.55, -1.57),  # Conveyor 2
         ]
 
@@ -166,6 +166,43 @@ class NavigationDockingController(Node):
     
 
     def box_payload (self,pickup):
+        '''
+        Purpose:
+        ---
+        This function initiates a payload action by calling a service to perform a specified action (e.g., dropping an item), 
+         It sends an asynchronous service request and waits for the result. The function logs 
+        the service request and its outcome.
+
+        Input Arguments:
+        ---
+        `pickup` : [bool]
+            A boolean value indicating the desired payload action:
+            - `True` for a pickup action (if implemented).
+            
+        Returns:
+        ---
+        `success` : [bool]
+            Indicates whether the service call was successful.
+
+        `message` : [str]
+            A string containing additional information, typically from the service response. This may include the name of the 
+            box involved in the action.
+
+        Behavior:
+        ---
+        The function constructs a `SetBool.Request` object with the `pickup` value and sends it asynchronously using 
+        the `box_receive` service client. It blocks execution until the service call is complete and returns the outcome 
+        of the operation.
+
+        Example Usage:
+        ---
+        # To initiate a drop action
+        success = self.box_payload(True)
+        if success:
+            print('Drop action succeeded.')
+        else:
+            print('Drop action failed.')
+        '''
         req=SetBool.Request()
         req.data=pickup
         
@@ -177,7 +214,6 @@ class NavigationDockingController(Node):
             self.get_logger().info(f'Box have put Successfully: {future.result()}')
             return True
         else:
-           
             return False
          
        
@@ -289,15 +325,16 @@ class NavigationDockingController(Node):
         """Run the navigation task and manage docking and payload services at specific waypoints."""
         self.set_initial_pose()
         self.navigator.waitUntilNav2Active()
-        
+        global passed_point
+        passed_point=0
         # Navigate to the first two waypoints
         self.navigator.followWaypoints(self.phase1_waypoint[:])
 
         while not self.navigator.isTaskComplete():
             feedback = self.navigator.getFeedback()
             if feedback:
-                
-                current_waypoint = feedback.current_waypoint
+                # global current_waypoint
+                current_waypoint = feedback.current_waypoint+passed_point
                 self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
                 if current_waypoint == 1 and not self.actions_triggered[0]:
@@ -309,11 +346,8 @@ class NavigationDockingController(Node):
                         
                         if box_req:
                             self.get_logger().info('Task Completed Successfully ')
-                            self.actions_triggered[0] = True
-                        
-                        
-                    # self.current_waypoint = feedback.current_waypoint+1
-            
+                            self.actions_triggered[0] = True                
+                   
         # Check completion of first phase
         result = self.navigator.getResult()
         if result == TaskResult.SUCCEEDED:
@@ -321,7 +355,9 @@ class NavigationDockingController(Node):
         else:
             self.get_logger().error('Phase 1 failed. Navigation halted.')
             return  # Stop further execution if phase 1 fails
-
+        
+        
+        passed_point=1
         # Reset the navigator for next phase navigation
         self.navigator.followWaypoints(self.phase2_waypoint[:])
         
@@ -329,10 +365,11 @@ class NavigationDockingController(Node):
             feedback = self.navigator.getFeedback()
             if feedback:
                 # global current_waypoint
-                current_waypoint = feedback.current_waypoint+1
+                current_waypoint = feedback.current_waypoint+passed_point
                 self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
                 if current_waypoint == 2 and not self.actions_triggered[1]:
+                    self.get_logger().info('Initiating payload drop at waypoint 2.')
                     docking_success = self.initiate_docking(target_distance=0.08, orientation_angle=1.57, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
@@ -342,7 +379,7 @@ class NavigationDockingController(Node):
                     else:
                         self.get_logger().error('Docking failed at waypoint 2. Aborting further operations.')
                         return  # Stop further execution if docking fails
-                    self.actions_triggered[1] = True
+                    
         
         result = self.navigator.getResult()
         if result == TaskResult.SUCCEEDED:
