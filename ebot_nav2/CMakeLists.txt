@@ -54,6 +54,7 @@ install(
   PROGRAMS
     scripts/nav2_cmd.py
     scripts/nav2_task3b.py
+    scripts/nav2_task4c.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -49,6 +49,9 @@ task_ptr = 0
 srv = False
 placed = False
 
+# aruco frame
+aruco_frame = ""
+
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
 lBoxPose = {
@@ -137,6 +140,7 @@ class Services(Node):
             rate.sleep()
 
         response.success = True
+        response.message = aruco_frame
         return response
 
 
@@ -515,6 +519,7 @@ class MoveItJointControl(Node):
         global signal
         global srv
         global placed
+        global aruco_frame
 
         if len(task_queue):
             if self.execute:
@@ -554,6 +559,8 @@ class MoveItJointControl(Node):
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
                             placed = True
+
+                            aruco_frame = self.box_attached
 
                             if len(aruco_transforms) == 0:
                                 # if aruco transforms is empty, then updating signal to true means to look up for amy new aruco transforms
