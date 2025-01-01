@@ -1,3 +1,19 @@
+# *****************************************************************************************
+# *
+# *        =============================================
+# *                  CL Theme (eYRC 2023-24)
+# *        =============================================
+# *
+# *
+# *  Filename:        mapper_params_online_async.yaml
+# *  Description:     Use this file to configure parameters for slam-toolbox.
+# *  Created:         31/12/2024
+# *  Last Modified:   31/12/2024
+# *  Modified by:     Siddharth
+# *  Author:          e-Yantra Team
+# *  
+# *****************************************************************************************
+
 slam_toolbox:
   ros__parameters:
 
@@ -9,7 +25,15 @@ slam_toolbox:
     ceres_dogleg_type: TRADITIONAL_DOGLEG
     ceres_loss_function: None
 
-    #Add ROS Parameters Here !!
+    # ROS Parameters
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    mode: localization
+
+
+    map_start_pose: [0.0, 0.0, 0.0]
 
     debug_logging: false
     throttle_scans: 1
