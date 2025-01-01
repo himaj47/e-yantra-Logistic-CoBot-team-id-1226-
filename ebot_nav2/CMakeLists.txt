@@ -38,18 +38,32 @@ endif()
 
 install(
   DIRECTORY
-    launch
-    config
-    maps
-    params
-    rviz
-    scripts
+  launch
+  models
+  meshes
+  config
+  plugins
+  maps
+  params
+  rviz
   DESTINATION
     share/${PROJECT_NAME}/
 )
 
+
+install(DIRECTORY
+  scripts/pyarmor_runtime_000000
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(
   PROGRAMS
+  scripts/pose_detector.py
+  scripts/pf_pose_saver.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
