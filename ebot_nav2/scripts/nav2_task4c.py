@@ -35,18 +35,18 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.receive_waypoint = [
-            self.create_goal_pose(0.20, -2.545, -0.1),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(0.20, -2.545, -0.1),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.60, -1.0),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.60, -1.0),  # recieve pose  0.95, -2.54, 1.87
         
         ]
         self.receive_waypoint1 = [
-            self.create_goal_pose(0.20, -2.28, -0.1),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(0.20, -2.28, -0.1),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.28, -0.1),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.28, -0.1),  # recieve pose  0.95, -2.54, 1.87
         
         ]
         self.receive_waypoint2 = [
-            self.create_goal_pose(0.20, -2.55, 0.8),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(0.20, -2.55, 0.8),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.51, -1.0),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(0.15, -2.51, -1.0),  # recieve pose  0.95, -2.54, 1.87
         
         ]
         
@@ -56,8 +56,8 @@ class NavigationDockingController(Node):
         ]
 
         self.conveyor1_waypoint=[
-            self.create_goal_pose(  -4.27,  2.89, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(  -4.27,  2.89, -1.57),  # Conveyor 1
+            self.create_goal_pose(  -4.30,  2.89, -1.00),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(  -4.30,  2.89, -1.00),  # Conveyor 1
         ]
 
         # Flags to ensure each action is triggered only once
@@ -339,10 +339,11 @@ class NavigationDockingController(Node):
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
                     
-                    docking_success = self.initiate_docking(target_distance=0.08, orientation_angle=0.13, rack_number='') 
+                    docking_success = self.initiate_docking(target_distance=0.08, orientation_angle=0.12, rack_number='') 
                     if docking_success:
+                        time.sleep(1.0)
                         box_req=self.box_payload(pickup=True)  # Pick up at waypoint 1
-                        
+                        # time.sleep(1.0)
                         if box_req.success:
                             self.get_logger().info('Task Completed Successfully ')
                             self.actions_triggered[current_waypoint-1] = True 
@@ -376,7 +377,7 @@ class NavigationDockingController(Node):
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
-                        time.sleep(0.5)
+                        time.sleep(0.8)
                         self.initiate_payload_action(pickup=False,box_name=box_name)  # Drop at waypoint 
                         
                         passed_point =passed_point+1
@@ -411,7 +412,7 @@ class NavigationDockingController(Node):
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
-                        time.sleep(0.5)
+                        time.sleep(0.8)
                         self.initiate_payload_action(pickup=False,box_name=box_name)  # Drop at waypoint 2
                         passed_point =passed_point+1
                         self.actions_triggered[current_waypoint-1] = True
@@ -473,30 +474,9 @@ class NavigationDockingController(Node):
             else:
                 self.get_logger().info('Going to Conveyor 2')
                 self.conveyor2_pose(box)
-                receive_pos=2
-        # self.get_logger().info('Going to Receive Pose')
-        # box=self.recieve_pose(pose=0)
-        # if int(box[3]) % 2 == 0:
-                
-        #     self.get_logger().info('Going to Conveyor 1')
-        #     self.conveyor1_pose(box)
-        #     box1=self.recieve_pose(pose=1)
-            
-        #     self.get_logger().info('Going to Conveyor 2')
-        #     self.conveyor2_pose(box1)
-        #     box3=self.recieve_pose(pose=0)
-        # else:
-        #     self.get_logger().info('Going to Conveyor 2')
-        #     self.conveyor2_pose(box)
-        #     box2=self.recieve_pose(pose=0)
-        #     if int(box2[3])%2==0:
-        #         self.get_logger().info('Going to Conveyor 1')
-        #         self.conveyor1_pose(box2)
-        #         box1=self.recieve_pose(pose=1)
-        #     else:
-        #         self.conveyor2_pose(box2)
-        #         box2=self.recieve_pose(pose=0)
-        self.get_logger(f'Successfull Completed all waypoint')
+                receive_pos=0
+        
+        self.get_logger().info(f'Task Completed SuccessFully...')
        
 ##################### MAIN FUNCTION #######################
 

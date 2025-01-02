@@ -55,15 +55,15 @@ aruco_frame = ""
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
 lBoxPose = {
-    "box_name": "box2",
-    "position": ["lBoxPose", 0.0, 0.0, 0.0],
+    "box_name": [],
+    "position": [],     # "lBoxPose", 0.0, 0.0, 0.0
     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
 }
 
 # rBoxPose: to store box_name, right box pose and its quaternion 
 rBoxPose = {
-    "box_name": "box3",
-    "position": ["rBoxPose", 0.0, 0.0, 0.0],
+    "box_name": [],
+    "position": [],     # "rBoxPose", 0.0, 0.0, 0.0
     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
 }
 
@@ -132,7 +132,7 @@ class Services(Node):
         rate = self.create_rate(2, self.get_clock())
 
         while not placed:
-            self.get_logger().info("Waiting for the box to be placed ...")
+            # self.get_logger().info("Waiting for the box to be placed ...")
             self.vel=Twist()
             self.vel.linear.x=0.0
             self.vel.angular.z=0.0
@@ -141,6 +141,7 @@ class Services(Node):
 
         response.success = True
         response.message = aruco_frame
+        print("response returned")
         return response
 
 
@@ -159,6 +160,10 @@ class TfFinder(Node):
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
         self.task_done = [0]*15
+
+        # ....................................
+        self.left_pose_ptr = -1
+        self.right_pose_ptr = -1
 
         self.callback_group = ReentrantCallbackGroup()
 
@@ -221,6 +226,7 @@ class TfFinder(Node):
             # base_link to box transforms (aruco transforms)
             if signal:
                 self.get_all_frames()
+                print(aruco_transforms)
 
                 if len(aruco_transforms) > 0:
                     flag = False
@@ -230,6 +236,7 @@ class TfFinder(Node):
                         box_num = int(tranform.strip("obj_"))
 
                         if not self.task_done[box_num]:
+                            print(f"printing transform = {tranform}")
                             base_to_box = self.tf_buffer.lookup_transform(
                                                     "base_link",
                                                     tranform,
@@ -237,21 +244,38 @@ class TfFinder(Node):
                             
                             # if the Y coordinate of the box is greater than zero, this means that the box is on the left of the ur5 arm
                             if base_to_box.transform.translation.y > 0:
+                                self.left_pose_ptr += 1
+                                box_name = "Lbox" + tranform.strip("obj_")
                                 # update the position key of lBoxPose
-                                lBoxPose["position"][0] = "lBoxPose" 
-                                lBoxPose["position"][1] = base_to_box.transform.translation.x
-                                lBoxPose["position"][2] = base_to_box.transform.translation.y
-                                lBoxPose["position"][3] = base_to_box.transform.translation.z
-                                lBoxPose["box_name"] = "box" + tranform.strip("obj_")
-                                self.schedule_tasks(box_pose=lBoxPose["position"])
+                                lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
+                                lBoxPose["position"].append(lst)
+                                # lBoxPose["position"][0] = "lBoxPose" 
+                                # lBoxPose["position"][1] = base_to_box.transform.translation.x
+                                # lBoxPose["position"][2] = base_to_box.transform.translation.y
+                                # lBoxPose["position"][3] = base_to_box.transform.translation.z
+
+                                # change this too
+                                # lBoxPose["box_name"].append()
+                                # lbox = lBoxPose["box_name"]
+                                # print(f"lbox name = {lbox}, lbox y = {base_to_box.transform.translation.x}")
+                                self.schedule_tasks(box_pose=lBoxPose["position"][self.left_pose_ptr])
+                                # self.left_pose_ptr
                             else:
+                                self.right_pose_ptr += 1
+                                box_name = "Rbox" + tranform.strip("obj_")
+                                lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
+
+                                rBoxPose["position"].append(lst)
+                                
                                 # update the position key of rBoxPose
-                                rBoxPose["position"][0] = "rBoxPose"
-                                rBoxPose["position"][1] = base_to_box.transform.translation.x 
-                                rBoxPose["position"][2] = base_to_box.transform.translation.y
-                                rBoxPose["position"][3] = base_to_box.transform.translation.z
-                                rBoxPose["box_name"] = "box" + tranform.strip("obj_")
-                                self.schedule_tasks(box_pose=rBoxPose["position"])
+                                # rBoxPose["position"][0] = "rBoxPose"
+                                # rBoxPose["position"][1] = base_to_box.transform.translation.x 
+                                # rBoxPose["position"][2] = base_to_box.transform.translation.y
+                                # rBoxPose["position"][3] = base_to_box.transform.translation.z
+                                # rBoxPose["box_name"] = "box" + tranform.strip("obj_")
+                                # rbox = rBoxPose["box_name"]
+                                # print(f"rbox name = {rbox}, rbox y = {base_to_box.transform.translation.x}")
+                                self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
                             self.task_done[box_num] = 1
 
@@ -295,7 +319,7 @@ class TfFinder(Node):
 
         # for box_pos in box_poses:
         if box_pose != None:
-            task_queue.append(ur5_configs["start_config"]["position"])
+            # task_queue.append(ur5_configs["start_config"]["position"])
 
             # if the Y coordinate of the box is greater than zero, this means that the box is on the left of the ur5 arm 
             if box_pose[2] > 0:
@@ -310,10 +334,11 @@ class TfFinder(Node):
 
             task_queue.append(ur5_configs["start_config"]["position"])
             task_queue.append(ur5_configs["drop_config"]["position"])
+            task_queue.append(ur5_configs["start_config"]["position"])
         
         if end:
             # make ur5 go back to the default position and orientation
-            task_queue.append(ur5_configs["start_config"]["position"])
+            # task_queue.append(ur5_configs["start_config"]["position"])
             task_queue.append(ur5_configs["default_config"]["position"])
             
 
@@ -393,14 +418,14 @@ class MoveItJointControl(Node):
     def mag_on_callback(self, future):
         try:
             response = future.result()
-            # print(f"response from /GripperON: {response}")
+            print(f"response from /GripperON: {response}")
         except Exception as e:
             print("error: {e}")
 
     def mag_off_callback(self, future):
         try:
             response = future.result()
-            # print(f"response from /GripperOFF: {response}")
+            print(f"response from /GripperOFF: {response}")
         except Exception as e:
             print("error: {e}")
 
@@ -421,7 +446,7 @@ class MoveItJointControl(Node):
 
         future = self.gripper_control_attach.call_async(req)
         future.add_done_callback(self.mag_on_callback)
-        # print(f"request for magnet on for box {box_name} is sent!!")
+        print(f"request for magnet on for {box_name} is sent!!")
 
     def magnet_off(self, box_name: str | None):
         req = DetachLink.Request()
@@ -432,7 +457,7 @@ class MoveItJointControl(Node):
 
         future = self.gripper_control_detach.call_async(req)
         future.add_done_callback(self.mag_off_callback)
-        # print(f"request for magnet off for box {box_name} is sent!!")
+        print(f"request for magnet off for box {box_name} is sent!!")
 
     # PID control
     def PID_controller(self, error, Kp, Kd = 0, Ki = 0):
@@ -535,6 +560,9 @@ class MoveItJointControl(Node):
             else:
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
                 if srv:
+                    # print(f"task pointer = {task_ptr}")
+                    # print(f"task queue = {task_queue}")
+                    
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0]
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1]
@@ -542,13 +570,13 @@ class MoveItJointControl(Node):
                     
                     # checking if the goal is reached
                     if (self.goal_reached(error_x, tolerance=0.009) and self.goal_reached(error_y, tolerance=0.009) and self.goal_reached(error_z, tolerance=0.009)):
-                        if task_queue[task_ptr][0] == "lBoxPose":
-                            self.box_attached = lBoxPose["box_name"]
-                            self.magnet_on(lBoxPose["box_name"])
+                        if task_queue[task_ptr][0][0] == "L":
+                            self.box_attached = task_queue[task_ptr][0][1:]
+                            self.magnet_on(self.box_attached)
 
-                        if task_queue[task_ptr][0] == "rBoxPose":
-                            self.box_attached = rBoxPose["box_name"]
-                            self.magnet_on(rBoxPose["box_name"])
+                        if task_queue[task_ptr][0][0] == "R":
+                            self.box_attached = task_queue[task_ptr][0][1:]
+                            self.magnet_on(self.box_attached)
 
                         if task_queue[task_ptr][0] == "drop_config":
                             print("box attached: " + str(self.box_attached))
@@ -567,8 +595,10 @@ class MoveItJointControl(Node):
                                 signal = True
                             else:
                                 aruco_transforms.pop(0)
+                                print("later = " + str(aruco_transforms))
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
+                        # print(f"later task queue = {task_queue}")
 
                     else:
                         ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
