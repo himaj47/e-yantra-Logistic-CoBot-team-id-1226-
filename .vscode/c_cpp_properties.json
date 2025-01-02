@@ -1,0 +1,36 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/prathmesh2931/ey_working/install/servo_msgs/include/**",
+        "/home/prathmesh2931/ey_working/install/realsense_gazebo_plugin/include/**",
+        "/home/prathmesh2931/ey_working/install/payload_service/include/**",
+        "/home/prathmesh2931/ey_working/install/linkattacher_msgs/include/**",
+        "/home/prathmesh2931/ey_working/install/ebot_docking/include/**",
+        "/home/prathmesh2931/check_ws/install/servo_msgs/include/**",
+        "/home/prathmesh2931/check_ws/install/realsense_gazebo_plugin/include/**",
+        "/home/prathmesh2931/check_ws/install/payload_service/include/**",
+        "/home/prathmesh2931/check_ws/install/linkattacher_msgs/include/**",
+        "/home/prathmesh2931/check_ws/install/ebot_docking/include/**",
+        "/home/prathmesh2931/eyantra_task3/install/servo_msgs/include/**",
+        "/home/prathmesh2931/eyantra_task3/install/realsense_gazebo_plugin/include/**",
+        "/home/prathmesh2931/eyantra_task3/install/payload_service/include/**",
+        "/home/prathmesh2931/eyantra_task3/install/linkattacher_msgs/include/**",
+        "/home/prathmesh2931/eyantra_task3/install/ebot_docking/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/prathmesh2931/ey_task4b/src/src/realsense_gazebo_plugin/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
