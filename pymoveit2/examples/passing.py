@@ -382,6 +382,9 @@ class MoveItJointControl(Node):
         self.max_lin_vel = 5.0
         self.max_ang_vel = 5.0
 
+        # box placed
+        self.box_placed = False
+
         # previous error (part of PID controller)
         self.prev_error = 0.0
 
@@ -570,20 +573,18 @@ class MoveItJointControl(Node):
                     
                     # checking if the goal is reached
                     if (self.goal_reached(error_x, tolerance=0.009) and self.goal_reached(error_y, tolerance=0.009) and self.goal_reached(error_z, tolerance=0.009)):
+                        
                         if task_queue[task_ptr][0][0] == "L":
                             self.box_attached = task_queue[task_ptr][0][1:]
                             self.magnet_on(self.box_attached)
 
-                        if task_queue[task_ptr][0][0] == "R":
+                        elif task_queue[task_ptr][0][0] == "R":
                             self.box_attached = task_queue[task_ptr][0][1:]
                             self.magnet_on(self.box_attached)
 
-                        if task_queue[task_ptr][0] == "drop_config":
+                        elif task_queue[task_ptr][0] == "drop_config":
                             print("box attached: " + str(self.box_attached))
                             self.magnet_off(box_name=self.box_attached)
-                            
-                            # once the box is dropped, wait until the client again requests on the /passing_service
-                            srv = False
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
                             placed = True
@@ -596,6 +597,13 @@ class MoveItJointControl(Node):
                             else:
                                 aruco_transforms.pop(0)
                                 print("later = " + str(aruco_transforms))
+                            
+                            self.box_placed = True
+                        
+                        elif self.box_placed and task_queue[task_ptr][0] == "start_config":
+                            # once the box is dropped, wait until the client again requests on the /passing_service
+                            srv = False
+                            self.box_placed = False
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
                         # print(f"later task queue = {task_queue}")
