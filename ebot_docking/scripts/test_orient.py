@@ -55,6 +55,14 @@ class MyRobotDockingController(Node):
         # Create a publisher for velocity commands
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
+       
+        # Initialize docking service client
+        self.docking_client = self.create_client(DockSw, '/dock_control')
+        while not self.docking_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for DockSw service...')
+
+        self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='') 
+        
         # Internal state variables
         self.is_docking = False
         self.docking_complete = False
@@ -72,6 +80,8 @@ class MyRobotDockingController(Node):
         
     def odometry_callback(self, msg:Float32):
         self.robot_orient=msg.data
+
+        print(self.robot_orient)
     #     # Update robot pose from odometry data
     #     self.robot_pose[0] = msg.pose.pose.position.x
     #     self.robot_pose[1] = msg.pose.pose.position.y
@@ -187,6 +197,60 @@ class MyRobotDockingController(Node):
             self.is_docking = False
 
         return linear_vel
+    
+       
+    def initiate_docking(self, target_distance, orientation_angle, rack_number):
+        '''
+        Purpose:
+        ---
+        This function initiates the docking process by sending a request to the docking service. 
+        The process involves aligning the robot to a specific distance, angle, and rack number.
+
+        Input Arguments:
+        ---
+        `target_distance` : [float]
+            The distance (in meters) from the docking target that the robot needs to maintain.
+
+        `orientation_angle` : [float]
+            The desired orientation angle (in radians) for docking alignment.
+
+        `rack_number` : [int]
+            The target rack number where docking needs to occur.
+
+        Returns:
+        ---
+        `success` : [bool]
+            Indicates whether the docking process was successfully initiated and executed.
+
+        Example call:
+        ---
+        success = self.initiate_docking(0.08, 1.57, 2)
+        if success:
+            print("Docking process completed successfully.")
+        else:
+            print("Docking process failed.")
+        '''
+
+        self.get_logger().info("Docking initiated and the request is being sent")
+
+        docking_request = DockSw.Request()
+        docking_request.startcmd = True  # Initiates the docking process
+        docking_request.undocking = False  # Specifies that we are docking, not undocking
+        docking_request.linear_dock = True  # Assuming you want to perform linear docking
+        docking_request.orientation_dock = True # Set to True if orientation adjustment is needed
+        docking_request.distance = target_distance
+        docking_request.orientation = orientation_angle
+        docking_request.rack_no = rack_number # Provide the target rack number
+
+        future = self.docking_client.call_async(docking_request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None and future.result().success:
+            self.get_logger().info(f"Docking successful with message: {future.result().message}")
+            return True
+        else:
+            self.get_logger().error('Docking service call failed')
+            return False
 
     def controller_loop(self):
         '''
@@ -237,16 +301,17 @@ class MyRobotDockingController(Node):
             
             # Return early to avoid engaging linear control
             return
+        print('alligned.........')
 
         # Linear alignment logic - Only reached if angular alignment is complete
-        angular_vel = 0.0  # Stop angular correction once aligned
-        self.linear_error = self.calculate_linear_error(kp_linear, safe_distance)
+        # angular_vel = 0.0  # Stop angular correction once aligned
+        # self.linear_error = self.calculate_linear_error(kp_linear, safe_distance)
 
-        # Generate and publish velocity commands for linear movement
-        twist_msg = Twist()
-        twist_msg.angular.z = angular_vel
-        twist_msg.linear.x = -min(self.linear_error, max_linear_vel) 
-        self.cmd_vel_pub.publish(twist_msg)
+        # # Generate and publish velocity commands for linear movement
+        # twist_msg = Twist()
+        # twist_msg.angular.z = angular_vel
+        # twist_msg.linear.x = -min(self.linear_error, max_linear_vel) 
+        # self.cmd_vel_pub.publish(twist_msg)
 
 
     def dock_control_callback(self, request, response):
