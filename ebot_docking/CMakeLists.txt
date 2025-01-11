@@ -17,6 +17,8 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+
 find_package(rosidl_default_generators REQUIRED)
 find_package(rclpy REQUIRED)
 # uncomment the following section in order to fill in
@@ -42,8 +44,8 @@ endif()
 
 install(
   DIRECTORY
-    srv
-    scripts
+  srv
+  scripts
   DESTINATION
     share/${PROJECT_NAME}/
 )
@@ -57,6 +59,7 @@ install(PROGRAMS
 	scripts/ebot_docking_boilerplate.py
   scripts/test_orient.py
   scripts/dock_task4b.py
+  scripts/send_dock.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

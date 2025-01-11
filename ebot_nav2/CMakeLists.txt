@@ -61,6 +61,7 @@ install(
   scripts/pose_detector.py
   scripts/pf_pose_saver.py
   scripts/nav2_task4b.py
+  scripts/test_nav.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

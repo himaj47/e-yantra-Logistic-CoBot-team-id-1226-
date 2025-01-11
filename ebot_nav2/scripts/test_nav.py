@@ -50,6 +50,7 @@ class NavigationDockingController(Node):
             self.create_goal_pose(3.171,  -1.342, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
             self.create_goal_pose(3.171,  -1.342, -1.57),  # Conveyor 1
         ]
+
         # Flags to ensure each action is triggered only once
         self.actions_triggered = [False, False,False,False,False,False]  # One per waypoint
         self.docking_in_progress = False  # Flag to track docking status
@@ -222,13 +223,14 @@ class NavigationDockingController(Node):
                 if current_waypoint in [3] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
                     
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='') 
-                    if docking_success:
-                        self.get_logger().info('Task Completed Successfully ')
-                        time.sleep(0.8)
-                        
-                        self.actions_triggered[current_waypoint-1] = True 
-                        passed_point =passed_point+1   
+                    # docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='') 
+                    # if docking_success:
+                    #     self.get_logger().info('Task Completed Successfully ')
+                    #     time.sleep(0.8)
+                    self.get_logger().info('Navigate to arm successfully ')
+
+                    self.actions_triggered[current_waypoint-1] = True 
+                    passed_point =passed_point+1   
                                         
         # Check completion of first phase
         result = self.navigator.getResult()
@@ -252,17 +254,19 @@ class NavigationDockingController(Node):
                 # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
                 if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
-                    # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
-                    # Proceed with payload drop once docking is successful
-                    if docking_success:
-                        self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
-                        time.sleep(0.8)
-                        passed_point =passed_point+1
-                        self.actions_triggered[current_waypoint-1] = True
-                    else:
-                        self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
-                        return  # Stop further execution if docking fails
+                    # # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
+                    # docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
+                    # # Proceed with payload drop once docking is successful
+                    # if docking_success:
+                    #     self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
+                    #     time.sleep(0.8)
+                    self.get_logger().info('Navigate to conveyor 2 successfully ')
+
+                    passed_point =passed_point+1
+                    self.actions_triggered[current_waypoint-1] = True
+                else:
+                    self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
+                    return  # Stop further execution if docking fails
                     
         
         result = self.navigator.getResult()
@@ -286,17 +290,18 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
-                    # Proceed with payload drop once docking is successful
-                    if docking_success:
-                        self.get_logger().info(f'Docking successful.  {current_waypoint}')
-                        time.sleep(0.5)
-                       
-                        passed_point =passed_point+1
-                        self.actions_triggered[current_waypoint-1] = True
-                    else:
-                        self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
-                        return  # Stop further execution if docking fails
+                    # docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
+                    # # Proceed with payload drop once docking is successful
+                    # if docking_success:
+                    #     self.get_logger().info(f'Docking successful.  {current_waypoint}')
+                    #     time.sleep(0.5)
+                    self.get_logger().info('Navigate to conveyor 1 successfully ')
+
+                    passed_point =passed_point+1
+                    self.actions_triggered[current_waypoint-1] = True
+                else:
+                    self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
+                    return  # Stop further execution if docking fails
                     
         
         result = self.navigator.getResult()
