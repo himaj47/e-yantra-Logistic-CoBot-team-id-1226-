@@ -45,7 +45,7 @@ class MoveIt2Servo:
         # Create publisher
         self.__twist_pub = self._node.create_publisher(
             msg_type=TwistStamped,
-            topic="delta_twist_cmds",
+            topic="/ServoCmdVel",
             qos_profile=QoSProfile(
                 durability=QoSDurabilityPolicy.VOLATILE,
                 reliability=QoSReliabilityPolicy.RELIABLE,
@@ -79,8 +79,8 @@ class MoveIt2Servo:
         self.__twist_msg.twist.angular.z = angular_speed
 
         # Enable servo immediately, if desired
-        # if enable_at_init:
-        #     self.enable()
+        if enable_at_init:
+            self.enable()
 
     def __del__(self):
         """
