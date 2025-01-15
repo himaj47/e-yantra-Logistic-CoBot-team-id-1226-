@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 '''
 # Team ID:          1226
 # Theme:            Logistic coBot
@@ -7,7 +10,6 @@
 # Global variables: signal, aruco_transforms, flag, task_queue, task_ptr, srv, placed, lBoxPose, rBoxPose, EEF_link, ur5_configs
 '''
 
-#! /usr/bin/env python3
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
@@ -240,7 +242,7 @@ class TfFinder(Node):
             # base_link to box transforms (aruco transforms)
             if signal:
                 self.get_all_frames()
-                print(aruco_transforms)
+                print(f"aruco transforms = {aruco_transforms}")
 
                 if len(aruco_transforms) > 0:
                     flag = False
