@@ -184,10 +184,12 @@ class aruco_tf(Node):
         Initialization of class aruco_tf
         '''
         super().__init__('aruco_tf_publisher')  # Registering node
+        self.get_logger().info("Node Started")
 
-        self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
-        self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
-        self.publisher_ = self.create_publisher(CompressedImage, 'camera/image/imageLB1226', 10)
+
+        self.color_cam_sub = self.create_subscription(Image, '/camera/camera/color/image_raw', self.colorimagecb, 10)
+        self.depth_cam_sub = self.create_subscription(Image, '/camera/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
+        self.publisher_ = self.create_publisher(CompressedImage, '/camera/image/imageLB1226', 10)
 
         self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
@@ -204,8 +206,10 @@ class aruco_tf(Node):
         '''
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
+            self.get_logger().info(f'got the depth image: {e}')
+
         except CvBridgeError as e:
-            self.get_logger().error(f'Error converting depth image: {e}')
+            self.get_logger().info(f'Error converting depth image')
 
     def colorimagecb(self, data):
         '''
@@ -213,6 +217,8 @@ class aruco_tf(Node):
         '''
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+            self.get_logger().error(f'got the colored image')
+
         except CvBridgeError as e:
             self.get_logger().error(f'Error converting color image: {e}')
 
@@ -220,7 +226,11 @@ class aruco_tf(Node):
         '''
         Timer function used to detect ArUco markers and publish TF.
         '''
-        if self.cv_image is None or self.depth_image is None:
+        if self.cv_image is None :
+            self.get_logger().info("colored not  image recevied")
+            return
+        if self.depth_image is None :
+            self.get_logger().info("depth not image recevied")
             return
 
         cam_mat = np.array([[931.1829833984375, 0, 640],
@@ -228,7 +238,7 @@ class aruco_tf(Node):
                             [0, 0, 1]])
         dist_mat = np.zeros((1, 5))  # Modify based on camera calibration
 
-
+        self.get_logger().info("moving to calculations part")
         center_aruco_list, distance_from_rgb_list, angle_aruco_list,angle_aruco_list_1,angle_aruco_list_2, width_aruco_list, ids, markerCorners = detect_aruco(self.cv_image, cam_mat, dist_mat)
 
         if ids is not None and len(center_aruco_list) == len(ids):  # Add length check
@@ -352,7 +362,7 @@ class aruco_tf(Node):
                     obj_t = TransformStamped()
                     obj_t.header.stamp = self.get_clock().now().to_msg()
                     obj_t.header.frame_id = 'base_link'
-                    obj_t.child_frame_id = f'obj_{ids[i][0]}'
+                    obj_t.child_frame_id = f'1226_base_{ids[i][0]}'
                     obj_t.transform.translation = trans.transform.translation
                     # quaternion_2 = tf_transformations.quaternion_from_euler(0,0, -angle_aruco)
                     # # print(f"quaternions for {quaternion_2}")
