@@ -206,7 +206,7 @@ class aruco_tf(Node):
         '''
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
-            self.get_logger().info(f'got the depth image: {e}')
+            self.get_logger().info(f'got the depth image')
 
         except CvBridgeError as e:
             self.get_logger().info(f'Error converting depth image')
