@@ -159,6 +159,8 @@ class MyRobotDockingController(Node):
 
         # Calculate angular error and normalize it
         angular_error = (desired_yaw - self.robot_pose[2])-3.24  
+        #for Odometry hardware
+        # angular_error=(desired_yaw-self.robot_orient)-3.24
         angular_error = math.atan2(math.sin(angular_error), math.cos(angular_error))  # Normalize to [-pi, pi]
 
         # Calculate derivative of the angular error

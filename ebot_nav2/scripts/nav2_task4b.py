@@ -21,6 +21,8 @@ from tf_transformations import euler_from_quaternion
 import time
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Float32
+
 
 class NavigationDockingController(Node):
     def __init__(self):
@@ -32,6 +34,7 @@ class NavigationDockingController(Node):
 
         # Set up odometry subscription
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+        # self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.arm_pose = [
@@ -69,6 +72,11 @@ class NavigationDockingController(Node):
         _, _, yaw = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.current_pose = (position.x, position.y, yaw)
     
+
+    # def odometry_callback(self, msg:Float32):
+    #     self.robot_orient=msg.data
+
+    #     print(self.robot_orient)
     def create_goal_pose(self, x, y, yaw):
         '''
         Purpose:
@@ -222,7 +230,7 @@ class NavigationDockingController(Node):
                 if current_waypoint in [3] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
                     
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='') 
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='') 
                     if docking_success:
                         self.get_logger().info('Task Completed Successfully ')
                         time.sleep(0.8)
@@ -253,7 +261,7 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
@@ -286,7 +294,7 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.10, orientation_angle=1.63, rack_number='')              
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful.  {current_waypoint}')

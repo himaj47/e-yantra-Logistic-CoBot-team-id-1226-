@@ -132,7 +132,7 @@ class NavigationDockingController(Node):
        
         
         self.get_logger().info(f'Task Completed SuccessFully...')
-        self.initiate_docking(target_distance=0.45 ,orientation_angle=3.20,rack_number='')
+        self.initiate_docking(target_distance=0.45 ,orientation_angle=0.0,rack_number='')
 ##################### MAIN FUNCTION #######################
 
 
