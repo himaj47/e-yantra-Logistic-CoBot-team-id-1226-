@@ -96,7 +96,8 @@ ur5_configs = {
 
     "drop_config": {
         "position": ["drop_config", 0.4835, -0.0030, -0.0380],
-        "quaternion": [0.71035, 0.70383, 0.00303, -0.00292]
+        "quaternion": [0.71035, 0.70383, 0.00303, -0.00292],
+        "euler_angles": [0.0, 0.0, 0.0]
     },
 
     "rbTopPose": {
@@ -207,7 +208,7 @@ class TfFinder(Node):
             # check for ebot aruco marker
             if srv:
                 try:
-                    ebot_aruco = self.tf_buffer.lookup_transform(     # EEF w.r.t. base_link
+                    ebot_aruco = self.tf_buffer.lookup_transform(     # aruco frame w.r.t. base_link
                         self.source_frame,
                         self.ebot_aruco_frame,
                         rclpy.time.Time()
@@ -218,6 +219,9 @@ class TfFinder(Node):
                     ur5_configs["drop_config"]["position"][1] = ebot_aruco.transform.translation.x + self.offset
                     ur5_configs["drop_config"]["position"][2] = ebot_aruco.transform.translation.y
                     ur5_configs["drop_config"]["position"][3] = -0.1
+
+                    # .......................
+                    ur5_configs["drop_config"]["euler_angles"] = tf_transformations.euler_from_quaternion([ebot_aruco.transform.rotation.x, ebot_aruco.transform.rotation.y, ebot_aruco.transform.rotation.z, ebot_aruco.transform.rotation.w])
 
                 except TransformException as ex:
                     self.get_logger().info(f'Could not transform {self.ebot_aruco_frame} to {self.source_frame}: {ex}')
@@ -249,15 +253,6 @@ class TfFinder(Node):
                                 # update the position key of lBoxPose
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
                                 lBoxPose["position"].append(lst)
-                                # lBoxPose["position"][0] = "lBoxPose" 
-                                # lBoxPose["position"][1] = base_to_box.transform.translation.x
-                                # lBoxPose["position"][2] = base_to_box.transform.translation.y
-                                # lBoxPose["position"][3] = base_to_box.transform.translation.z
-
-                                # change this too
-                                # lBoxPose["box_name"].append()
-                                # lbox = lBoxPose["box_name"]
-                                # print(f"lbox name = {lbox}, lbox y = {base_to_box.transform.translation.x}")
                                 self.schedule_tasks(box_pose=lBoxPose["position"][self.left_pose_ptr])
                                 # self.left_pose_ptr
                             else:
@@ -266,15 +261,6 @@ class TfFinder(Node):
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
 
                                 rBoxPose["position"].append(lst)
-                                
-                                # update the position key of rBoxPose
-                                # rBoxPose["position"][0] = "rBoxPose"
-                                # rBoxPose["position"][1] = base_to_box.transform.translation.x 
-                                # rBoxPose["position"][2] = base_to_box.transform.translation.y
-                                # rBoxPose["position"][3] = base_to_box.transform.translation.z
-                                # rBoxPose["box_name"] = "box" + tranform.strip("obj_")
-                                # rbox = rBoxPose["box_name"]
-                                # print(f"rbox name = {rbox}, rbox y = {base_to_box.transform.translation.x}")
                                 self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
                             self.task_done[box_num] = 1
@@ -614,7 +600,6 @@ class MoveItJointControl(Node):
                         ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
 
                         # print("ln_vel_X: " + str(ln_vel_X), "  ln_vel_Y: " + str(ln_vel_Y), "  ln_vel_Z: " + str(ln_vel_Z))
-                        
                         self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
 
 
