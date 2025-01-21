@@ -32,7 +32,7 @@ from tf2_ros.transform_listener import TransformListener
 
 import yaml
 from std_srvs.srv import SetBool
-from std_msgs.msg import Float64
+from std_msgs.msg import Int64
 from geometry_msgs.msg import Twist
 # signal: to signal when to look for new transforms
 signal = True 
@@ -59,7 +59,7 @@ aruco_frame = ""
 
 # ForceStatus
 enable_force_status = True
-fstat = 0.0
+fstat = 0
 
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
@@ -177,11 +177,11 @@ class TfFinder(Node):
         self.callback_group = ReentrantCallbackGroup()
 
         self.transform_checker = self.create_timer(0.01, self.check_transform)
-        self.create_subscription(Float64, "/servo_node/ForceStatus", self.force_status_callback, 10, callback_group=self.callback_group)
+        self.create_subscription(Int64, "/servo_node/ForceStatus", self.force_status_callback, 10, callback_group=self.callback_group)
         # self.create_subscription(Float64, "/net_wrench", self.EFF_nforce_callback, 10, callback_group=self.callback_group)
 
     
-    def force_status_callback(self, msg:Float64):
+    def force_status_callback(self, msg:Int64):
         global fstat
         fstat = msg.data
         
@@ -654,7 +654,7 @@ class MoveItJointControl(Node):
                         if task_ptr < len(task_queue)-1: task_ptr += 1
                         # print(f"later task queue = {task_queue}")
 
-                    elif fstat < 3.0:
+                    elif fstat < 3:
                         ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
                         ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
                         ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
