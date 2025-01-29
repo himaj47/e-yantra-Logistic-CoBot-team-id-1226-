@@ -38,26 +38,26 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.arm_pose = [
-            # self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            # self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
-           self.create_goal_pose(0.49, -2.52, 0.99), 
-           self.create_goal_pose(0.49, -2.52, 0.99), 
+            self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
+        #    self.create_goal_pose(0.49, -2.52, 0.99), 
+        #    self.create_goal_pose(0.49, -2.52, 0.99), 
         ]
         
         
         self.conveyor2_waypoint = [
-            # self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
-            # self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2
-            self.create_goal_pose(2.24, 3.03, 0.69),
-            self.create_goal_pose(2.24, 3.03, 0.69),
+            self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2
+            # self.create_goal_pose(2.24, 3.03, 0.69),
+            # self.create_goal_pose(2.24, 3.03, 0.69),
         ]
                                                                                                                      
         self.conveyor1_waypoint=[
 
-            # self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            # self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1
-            self.create_goal_pose(-4.33,  3.04, 0.7), 
-            self.create_goal_pose(-4.33,  3.04, 0.7), 
+            self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1
+            # self.create_goal_pose(-4.33,  3.04, 0.7), 
+            # self.create_goal_pose(-4.33,  3.04, 0.7), 
         ]
         # Flags to ensure each action is triggered only once
         self.actions_triggered = [False, False,False,False,False,False]  # One per waypoint
