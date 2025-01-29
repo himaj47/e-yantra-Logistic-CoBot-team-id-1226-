@@ -11,7 +11,7 @@
 ################### IMPORT MODULES #######################
 import rclpy
 from rclpy.node import Node
-from payload_service.srv import PayloadSW
+
 from ebot_docking.srv import DockSw
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
@@ -220,41 +220,7 @@ class NavigationDockingController(Node):
         self.navigator.setInitialPose(initial_pose)
         self.get_logger().info("Initial pose set for eBot")
     
-    def pose_arm(self,pose):
-        if pose==0:
-            self.navigator.followWaypoints(self.arm_pose[:])
-           
-        
-        while not self.navigator.isTaskComplete():
-            feedback = self.navigator.getFeedback()
-            global passed_point
-            if feedback:
-                # global current_waypoint
-                current_waypoint = feedback.current_waypoint+passed_point
-                # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
-                # Handle actions for the first two waypoints
-                if current_waypoint in [3] and not self.actions_triggered[current_waypoint-1]:
-                    # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
-                    
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='') 
-                    if docking_success:
-                        self.get_logger().info('Task Completed Successfully ')
-                        time.sleep(0.8)
-                        
-                        self.actions_triggered[current_waypoint-1] = True 
-                        passed_point =passed_point+1   
-                                        
-        # Check completion of first phase
-        result = self.navigator.getResult()
-        if result == TaskResult.SUCCEEDED:
-            self.get_logger().info('Receive  completed successfully. Proceeding to next phase.')
-        else:
-            self.get_logger().error(' Receive failed. Navigation halted.')
-            return  # Stop further execution if phase 1 fails
-        
-        
-        # passed_point =passed_point+1
-
+    
     def conveyor2_pose(self):
         self.navigator.followWaypoints(self.conveyor2_waypoint[:])
         global passed_point
@@ -265,9 +231,9 @@ class NavigationDockingController(Node):
                 current_waypoint = feedback.current_waypoint+passed_point
                 # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
-                if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
+                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='')              
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
@@ -288,39 +254,7 @@ class NavigationDockingController(Node):
         # passed_point =passed_point+1
 
 
-    def conveyor1_pose(self):
-        self.navigator.followWaypoints(self.conveyor1_waypoint[:])
-        global passed_point
-        while not self.navigator.isTaskComplete():
-            feedback = self.navigator.getFeedback()
-            if feedback:
-                # global current_waypoint
-                current_waypoint = feedback.current_waypoint+passed_point
-                # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
-                # Handle actions for the first two waypoints
-                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
-                    # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='')              
-                    # Proceed with payload drop once docking is successful
-                    if docking_success:
-                        self.get_logger().info(f'Docking successful.  {current_waypoint}')
-                        time.sleep(0.5)
-                       
-                        passed_point =passed_point+1
-                        self.actions_triggered[current_waypoint-1] = True
-                    else:
-                        self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
-                        return  # Stop further execution if docking fails
-                    
-        
-        result = self.navigator.getResult()
-        if result == TaskResult.SUCCEEDED:
-            self.get_logger().info(' conveyor1_pose completed successfully')
-        else:
-            self.get_logger().error('conveyor1_pose failed. Navigation halted.')
-            return  # Stop further execution if phase 1 fails
-        # passed_point =passed_point+1
-
+   
     def execute_navigation(self):
         '''
         Purpose:
@@ -355,18 +289,13 @@ class NavigationDockingController(Node):
         passed_point=0
         
             
-        self.get_logger().info('Going to Conveyor 1')
-        self.conveyor1_pose()
-        
-    
+       
         self.get_logger().info('Going to Conveyor 2')
         self.conveyor2_pose()
         
-        self.get_logger().info('Going to arm Pose')
-        self.pose_arm(pose=0)
        
         
-        self.get_logger(f'Successfull Completed all waypoint')
+        self.get_logger().info(f'Task Completed SuccessFully')
        
 ##################### MAIN FUNCTION #######################
 

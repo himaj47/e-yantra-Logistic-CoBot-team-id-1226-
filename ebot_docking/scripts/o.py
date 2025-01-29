@@ -46,11 +46,11 @@ class MyRobotDockingController(Node):
 
         # Subscribe to odometry and sensor data
        
-        # ultra_sub = self.create_subscription(Float32MultiArray, 'ultrasonic_sensor_std_float', self.ultra_callback, 10)
+        ultra_sub = self.create_subscription(Float32MultiArray, 'ultrasonic_sensor_std_float', self.ultra_callback, 10)
         # self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
-        self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
-        self.ultrasonic_rr_sub = self.create_subscription(Range, '/ultrasonic_rr/scan', self.ultrasonic_rr_callback, 10)
+        # self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
+        # self.ultrasonic_rr_sub = self.create_subscription(Range, '/ultrasonic_rr/scan', self.ultrasonic_rr_callback, 10)
 
 
         # Create a service for docking control
@@ -77,15 +77,19 @@ class MyRobotDockingController(Node):
         self.controller_timer = self.create_timer(0.1, self.controller_loop)
         
     # callback for ultrasonic subscription
-    # def ultra_callback(self,msg:Float32MultiArray):
-    #     self.usrleft_value = msg.data[4]
-    #     self.usrright_value = msg.data[5]
+    def ultra_callback(self,msg:Float32MultiArray):
+        self.usrleft_value = msg.data[4]
+        self.usrright_value = msg.data[5]
+        self.usrleft_value  /=100
+        self.usrright_value /=100
         
-    def ultrasonic_rl_callback(self, msg):
-        self.usrleft_value = msg.range
+    # def ultrasonic_rl_callback(self, msg):
+    #     self.usrleft_value = msg.range
 
-    def ultrasonic_rr_callback(self, msg):
-        self.usrright_value = msg.range
+    # def ultrasonic_rr_callback(self, msg):
+    #     self.usrright_value = msg.range
+        # self.usrleft_value/=100
+        # print(self.usrleft_value)
 
     # def odometry_callback(self, msg:Float32):
     #     self.robot_orient=msg.data
@@ -100,7 +104,7 @@ class MyRobotDockingController(Node):
         orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
         self.robot_pose[2] = yaw
-        print(yaw)
+        # print(yaw)
     #     # Update robot pose from odometry data
     #     self.robot_pose[0] = msg.pose.pose.position.x
     #     self.robot_pose[1] = msg.pose.pose.position.y
@@ -247,7 +251,7 @@ class MyRobotDockingController(Node):
         # Control parameters
         safe_distance = self.safe_dist  # 0.06
         min_orient_error = 0.05  # Adjusted for finer angular precision
-        kp_linear = 1.9  # Proportional gain for linear control
+        kp_linear = 1.5  # Proportional gain for linear control
         kp_angular = 1.6  # Proportional gain for angular control
         kd_angular = 0.0001  # Derivative gain for angular control
         max_linear_vel = 0.8
@@ -272,17 +276,17 @@ class MyRobotDockingController(Node):
             return
         print('alligned.........')
 
-        self.docking_complete = True
-        self.get_logger().info("Docking complete.")
-        self.is_docking = False
-        # angular_vel = 0.0  # Stop angular correction once aligned
-        # self.linear_error = self.calculate_linear_error(kp_linear, safe_distance)
+        # self.docking_complete = True
+        # self.get_logger().info("Docking complete.")
+        # self.is_docking = False
+        angular_vel = 0.0  # Stop angular correction once aligned
+        self.linear_error = self.calculate_linear_error(kp_linear, safe_distance)
 
-        # # Generate and publish velocity commands for linear movement
-        # twist_msg = Twist()
-        # twist_msg.angular.z = angular_vel
-        # twist_msg.linear.x = -min(self.linear_error, max_linear_vel) 
-        # self.cmd_vel_pub.publish(twist_msg)
+        # Generate and publish velocity commands for linear movement
+        twist_msg = Twist()
+        twist_msg.angular.z = angular_vel
+        twist_msg.linear.x = -min(self.linear_error, max_linear_vel) 
+        self.cmd_vel_pub.publish(twist_msg)
 
 
     def dock_control_callback(self, request, response):

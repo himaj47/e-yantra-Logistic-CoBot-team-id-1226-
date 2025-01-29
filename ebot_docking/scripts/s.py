@@ -11,7 +11,7 @@
 ################### IMPORT MODULES #######################
 import rclpy
 from rclpy.node import Node
-from payload_service.srv import PayloadSW
+
 from ebot_docking.srv import DockSw
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
@@ -132,7 +132,7 @@ class NavigationDockingController(Node):
        
         
         self.get_logger().info(f'Task Completed SuccessFully...')
-        self.initiate_docking(target_distance=0.45 ,orientation_angle=0.0,rack_number='')
+        self.initiate_docking(target_distance=0.70 ,orientation_angle=3.30,rack_number='')
 ##################### MAIN FUNCTION #######################
 
 
