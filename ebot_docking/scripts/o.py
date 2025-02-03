@@ -47,8 +47,8 @@ class MyRobotDockingController(Node):
         # Subscribe to odometry and sensor data
        
         ultra_sub = self.create_subscription(Float32MultiArray, 'ultrasonic_sensor_std_float', self.ultra_callback, 10)
-        # self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
-        self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+        self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
+        # self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
         # self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
         # self.ultrasonic_rr_sub = self.create_subscription(Range, '/ultrasonic_rr/scan', self.ultrasonic_rr_callback, 10)
 
@@ -65,7 +65,9 @@ class MyRobotDockingController(Node):
         # while not self.docking_client.wait_for_service(timeout_sec=1.0):
         #     self.get_logger().info('Waiting for DockSw service...')
 
-      
+        self.robot_orient = None  # Initialize as None
+        self.alpha=0.6
+
         # Internal state variables
         self.is_docking = False
         self.docking_complete = False
@@ -91,19 +93,23 @@ class MyRobotDockingController(Node):
         # self.usrleft_value/=100
         # print(self.usrleft_value)
 
-    # def odometry_callback(self, msg:Float32):
-    #     self.robot_orient=msg.data
+    def odometry_callback(self, msg:Float32):
+        if self.robot_orient is None:  # Initialize on first callback
+            self.robot_orient = msg.data
+        else:
+            self.robot_orient = self.alpha * msg.data + (1 - self.alpha) * self.robot_orient
 
-    #     print(self.robot_orient)
-
-    def odometry_callback(self, msg):
-        # Update robot pose from odometry data
-        self.robot_pose[0] = msg.pose.pose.position.x
-        self.robot_pose[1] = msg.pose.pose.position.y
-        quaternion_array = msg.pose.pose.orientation
-        orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
-        _, _, yaw = euler_from_quaternion(orientation_list)
-        self.robot_pose[2] = yaw
+        print(self.robot_orient)  # Print the filtered orientation
+       
+        
+    # def odometry_callback(self, msg):
+    #     # Update robot pose from odometry data
+    #     self.robot_pose[0] = msg.pose.pose.position.x
+    #     self.robot_pose[1] = msg.pose.pose.position.y
+    #     quaternion_array = msg.pose.pose.orientation
+    #     orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
+    #     _, _, yaw = euler_from_quaternion(orientation_list)
+    #     self.robot_pose[2] = yaw
         # print(yaw)
     #     # Update robot pose from odometry data
     #     self.robot_pose[0] = msg.pose.pose.position.x
@@ -162,9 +168,11 @@ class MyRobotDockingController(Node):
         '''
 
         # Calculate angular error and normalize it
-        angular_error = (desired_yaw - self.robot_pose[2])-3.24  
+        # angular_error = (desired_yaw - self.robot_pose[2])-3.24
+        # angular_error = (desired_yaw - self.robot_pose[2])
+
         #for Odometry hardware
-        # angular_error=(desired_yaw-self.robot_orient)-3.24
+        angular_error=(desired_yaw-self.robot_orient)
         angular_error = math.atan2(math.sin(angular_error), math.cos(angular_error))  # Normalize to [-pi, pi]
 
         # Calculate derivative of the angular error
@@ -250,10 +258,10 @@ class MyRobotDockingController(Node):
 
         # Control parameters
         safe_distance = self.safe_dist  # 0.06
-        min_orient_error = 0.05  # Adjusted for finer angular precision
+        min_orient_error = 0.06  # Adjusted for finer angular precision
         kp_linear = 1.5  # Proportional gain for linear control
-        kp_angular = 1.6  # Proportional gain for angular control
-        kd_angular = 0.0001  # Derivative gain for angular control
+        kp_angular = 1.3  # Proportional gain for angular control
+        kd_angular = 0.0002 # Derivative gain for angular control
         max_linear_vel = 0.8
         max_angular_vel = 0.8
 

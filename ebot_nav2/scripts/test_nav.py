@@ -11,7 +11,7 @@
 ################### IMPORT MODULES #######################
 import rclpy
 from rclpy.node import Node
-from payload_service.srv import PayloadSW
+
 from ebot_docking.srv import DockSw
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
@@ -38,24 +38,24 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.arm_pose = [
-            # self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            # self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            # self.create_goal_pose(3.146, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            # self.create_goal_pose(3.146, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
            self.create_goal_pose(0.49, -2.52, 0.99), 
            self.create_goal_pose(0.49, -2.52, 0.99), 
         ]
         
         
         self.conveyor2_waypoint = [
-            # self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
-            # self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2
+            # self.create_goal_pose(3.12, 1.75, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            # self.create_goal_pose(3.12, 1.75, -1.57),  # Conveyor 2
             self.create_goal_pose(2.24, 3.03, 0.69),
             self.create_goal_pose(2.24, 3.03, 0.69),
         ]
                                                                                                                      
         self.conveyor1_waypoint=[
 
-            # self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            # self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1
+            # self.create_goal_pose(2.75,  -1.34, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            # self.create_goal_pose(2.75,  -1.34, -1.57),  # Conveyor 1
             self.create_goal_pose(-4.33,  3.04, 0.7), 
             self.create_goal_pose(-4.33,  3.04, 0.7), 
         ]
@@ -236,7 +236,7 @@ class NavigationDockingController(Node):
                 if current_waypoint in [3] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
                     
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='') 
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='') 
                     if docking_success:
                         self.get_logger().info('Task Completed Successfully ')
                         time.sleep(0.8)
@@ -267,7 +267,7 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.63, rack_number='')              
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.60, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
@@ -300,7 +300,7 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='')              
+                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=1.60, rack_number='')              
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful.  {current_waypoint}')
@@ -363,10 +363,10 @@ class NavigationDockingController(Node):
         self.conveyor2_pose()
         
         self.get_logger().info('Going to arm Pose')
-        self.pose_arm(pose=0)
+        self.pose_arm(pose=receive_pos)
        
         
-        self.get_logger(f'Successfull Completed all waypoint')
+        self.get_logger().info(f'Task Completed SuccessFully')
        
 ##################### MAIN FUNCTION #######################
 

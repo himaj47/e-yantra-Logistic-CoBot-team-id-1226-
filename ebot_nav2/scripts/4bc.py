@@ -265,7 +265,7 @@ class NavigationDockingController(Node):
                 current_waypoint = feedback.current_waypoint+passed_point
                 # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
-                if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
+                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
                     docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='')              
                     # Proceed with payload drop once docking is successful
@@ -281,9 +281,9 @@ class NavigationDockingController(Node):
         
         result = self.navigator.getResult()
         if result == TaskResult.SUCCEEDED:
-            self.get_logger().info('conveyor2_pose completed successfully')
+            self.get_logger().info('conveyor1_pose completed successfully')
         else:
-            self.get_logger().error('conveyor2_pose. Navigation halted.')
+            self.get_logger().error('conveyor1_pose. Navigation halted.')
             return  # Stop further execution if phase 1 fails
         # passed_point =passed_point+1
 
@@ -298,7 +298,7 @@ class NavigationDockingController(Node):
                 current_waypoint = feedback.current_waypoint+passed_point
                 # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
-                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
+                if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
                     docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='')              
                     # Proceed with payload drop once docking is successful
@@ -315,9 +315,9 @@ class NavigationDockingController(Node):
         
         result = self.navigator.getResult()
         if result == TaskResult.SUCCEEDED:
-            self.get_logger().info(' conveyor1_pose completed successfully')
+            self.get_logger().info(' conveyor2_pose completed successfully')
         else:
-            self.get_logger().error('conveyor1_pose failed. Navigation halted.')
+            self.get_logger().error('conveyor2_pose failed. Navigation halted.')
             return  # Stop further execution if phase 1 fails
         # passed_point =passed_point+1
 
@@ -355,12 +355,14 @@ class NavigationDockingController(Node):
         passed_point=0
         
             
-        self.get_logger().info('Going to Conveyor 1')
-        self.conveyor1_pose()
+       
         
     
-        self.get_logger().info('Going to Conveyor 2')
+        self.get_logger().info('Going to Conveyor 1')
         self.conveyor2_pose()
+
+        self.get_logger().info('Going to Conveyor 2')
+        self.conveyor1_pose()
         
         self.get_logger().info('Going to arm Pose')
         self.pose_arm(pose=receive_pos)

@@ -64,6 +64,8 @@ install(
   scripts/a.py
   scripts/c2.py
   scripts/test_nav.py
+  scripts/res.py
+  scripts/4bc.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

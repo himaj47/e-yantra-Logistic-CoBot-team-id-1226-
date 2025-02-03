@@ -61,6 +61,7 @@ install(PROGRAMS
   scripts/dock_task4b.py
   scripts/s.py
   scripts/to.py
+  scripts/no.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

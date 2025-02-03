@@ -64,8 +64,7 @@ class MyRobotDockingController(Node):
         # self.docking_client = self.create_client(DockSw, '/dock_control')
         # while not self.docking_client.wait_for_service(timeout_sec=1.0):
         #     self.get_logger().info('Waiting for DockSw service...')
-        self.robot_orient = None  # Initialize as None
-        self.alpha=0.6
+
       
         # Internal state variables
         self.is_docking = False
@@ -93,14 +92,9 @@ class MyRobotDockingController(Node):
         # print(self.usrleft_value)
 
     def odometry_callback(self, msg:Float32):
-        if self.robot_orient is None:  # Initialize on first callback
-            self.robot_orient = msg.data
-        else:
-            self.robot_orient = self.alpha * msg.data + (1 - self.alpha) * self.robot_orient
+        self.robot_orient=msg.data
 
-        print(self.robot_orient)  # Print the filtered orientation
-       
-        
+        print(self.robot_orient)
 
     # def odometry_callback(self, msg):
     #     # Update robot pose from odometry data
@@ -264,23 +258,23 @@ class MyRobotDockingController(Node):
         max_angular_vel = 0.8
 
         # Angular alignment logic
-        if not self.is_angular_aligned:
-            # Calculate angular error using yaw from odometry if not already aligned
-            angular_vel, angular_error = self.calculate_angular_error(
-                kp_angular, kd_angular, self.desired_yaw, min_orient_error, self.prev_angular_error
-            )
-            # Store the current angular error for the next loop iteration
-            self.prev_angular_error = angular_error
+        # if not self.is_angular_aligned:
+        #     # Calculate angular error using yaw from odometry if not already aligned
+        #     angular_vel, angular_error = self.calculate_angular_error(
+        #         kp_angular, kd_angular, self.desired_yaw, min_orient_error, self.prev_angular_error
+        #     )
+        #     # Store the current angular error for the next loop iteration
+        #     self.prev_angular_error = angular_error
 
-            # Generate and publish only angular velocity if not aligned
-            twist_msg = Twist()
-            twist_msg.angular.z = min(angular_vel, max_angular_vel)
-            twist_msg.linear.x = 0.0  # Prevent linear movement until angular alignment is done
-            self.cmd_vel_pub.publish(twist_msg)
+        #     # Generate and publish only angular velocity if not aligned
+        #     twist_msg = Twist()
+        #     twist_msg.angular.z = min(angular_vel, max_angular_vel)
+        #     twist_msg.linear.x = 0.0  # Prevent linear movement until angular alignment is done
+        #     self.cmd_vel_pub.publish(twist_msg)
             
-            # Return early to avoid engaging linear control
-            return
-        print('alligned.........')
+        #     # Return early to avoid engaging linear control
+        #     return
+        # print('alligned.........')
 
         self.docking_complete = True
         self.get_logger().info("Docking complete.")
