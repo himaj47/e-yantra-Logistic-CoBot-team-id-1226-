@@ -33,6 +33,7 @@ from tf2_ros.transform_listener import TransformListener
 import yaml
 from std_srvs.srv import SetBool
 from std_msgs.msg import Int64
+from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 # signal: to signal when to look for new transforms
 signal = True 
@@ -50,7 +51,7 @@ task_queue = []
 task_ptr = 0
 
 # service handler flags
-srv = False
+srv = True
 placed = False
 
 # aruco frame
@@ -60,6 +61,8 @@ aruco_frame = ""
 # ForceStatus
 enable_force_status = True
 fstat = 0
+netWrench = 0.0
+netWrenchThres = 0.0
 
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
@@ -162,9 +165,9 @@ class TfFinder(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.EEF_target_frame = "wrist_3_link"   # EEF frame
-        self.box_target_frame = "obj_"           # box frame
+        self.box_target_frame = "1226_base_"           # box frame
         self.source_frame = "base_link"
-        self.ebot_aruco_frame = "obj_12"
+        self.ebot_aruco_frame = "1226_base_6"
         self.offset = 0.08
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
@@ -178,13 +181,17 @@ class TfFinder(Node):
 
         self.transform_checker = self.create_timer(0.01, self.check_transform)
         self.create_subscription(Int64, "/servo_node/ForceStatus", self.force_status_callback, 10, callback_group=self.callback_group)
-        # self.create_subscription(Float64, "/net_wrench", self.EFF_nforce_callback, 10, callback_group=self.callback_group)
+        self.create_subscription(Float64, "/net_wrench", self.EFF_nforce_callback, 10, callback_group=self.callback_group)
 
-    
+
     def force_status_callback(self, msg:Int64):
         global fstat
         fstat = msg.data
-        
+
+    def EFF_nforce_callback(self, msg:Float64):
+        global netWrench
+        netWrench = msg.data
+        print("netWrench = " + str(netWrench))
 
     # checking all necessary transforms
     def check_transform(self):
@@ -249,7 +256,7 @@ class TfFinder(Node):
                     signal = False
 
                     for tranform in aruco_transforms:
-                        box_num = int(tranform.strip("obj_"))
+                        box_num = int(tranform.strip("1226_base_"))
 
                         if not self.task_done[box_num]:
                             print(f"printing transform = {tranform}")
@@ -261,7 +268,7 @@ class TfFinder(Node):
                             # if the Y coordinate of the box is greater than zero, this means that the box is on the left of the ur5 arm
                             if base_to_box.transform.translation.y > 0:
                                 self.left_pose_ptr += 1
-                                box_name = "Lbox" + tranform.strip("obj_")
+                                box_name = "Lbox" + tranform.strip("1226_base_")
                                 # update the position key of lBoxPose
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
                                 lBoxPose["position"].append(lst)
@@ -278,7 +285,7 @@ class TfFinder(Node):
                                 # self.left_pose_ptr
                             else:
                                 self.right_pose_ptr += 1
-                                box_name = "Rbox" + tranform.strip("obj_")
+                                box_name = "Rbox" + tranform.strip("1226_base_")
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
 
                                 rBoxPose["position"].append(lst)
@@ -382,9 +389,9 @@ class TfFinder(Node):
         frames_dict = yaml.safe_load(frames_yaml)
 
         for frame in frames_dict:
-            if frame.startswith("obj_"):
-                if frame != "obj_12":
-                    frame_id = int(frame.strip("obj_"))
+            if frame.startswith("1226_base_"):
+                if frame != "1226_base_6":
+                    frame_id = int(frame.strip("1226_base_"))
 
                     if not self.task_done[frame_id]:
                         aruco_transforms.append(frame)
@@ -409,6 +416,9 @@ class MoveItJointControl(Node):
 
         # box attached to EEF
         self.box_attached = ""
+
+        # EEF force threshold
+        self.force_threshold = 30.0
 
         self.callback_group = ReentrantCallbackGroup()
 
@@ -504,7 +514,7 @@ class MoveItJointControl(Node):
             response = future.result()
             print(f"response from /io_and_status_controller/set_io: {response}")
         except Exception as e:
-            print("error: {e}")
+            print(f"error: {e}")
 
     # PID control
     def PID_controller(self, error, Kp, Kd = 0, Ki = 0):
@@ -587,13 +597,10 @@ class MoveItJointControl(Node):
         None
         '''
 
-        global task_ptr
-        global signal
-        global srv
-        global placed
-        global aruco_frame
+        global task_ptr, signal, srv, placed, aruco_frame, netWrench
 
         if len(task_queue):
+            print("srv: " + str(srv))
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
@@ -616,8 +623,8 @@ class MoveItJointControl(Node):
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
                     
                     # checking if the goal is reached
-                    if (self.goal_reached(error_x, tolerance=0.009) and self.goal_reached(error_y, tolerance=0.009) and self.goal_reached(error_z, tolerance=0.009)):
-                        
+                    if ((self.goal_reached(error_x, tolerance=0.009) and self.goal_reached(error_y, tolerance=0.009) and self.goal_reached(error_z, tolerance=0.009)) or (netWrench >= self.force_threshold)):
+                        self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             self.box_attached = task_queue[task_ptr][0][1:]
                             # self.magnet_on(self.box_attached)
@@ -654,16 +661,16 @@ class MoveItJointControl(Node):
                         if task_ptr < len(task_queue)-1: task_ptr += 1
                         # print(f"later task queue = {task_queue}")
 
-                    elif fstat < 3:
-                        ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
-                        ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
-                        ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
+                    # elif fstat < 3:
+                    ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
+                    ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
+                    ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
 
                         # print("ln_vel_X: " + str(ln_vel_X), "  ln_vel_Y: " + str(ln_vel_Y), "  ln_vel_Z: " + str(ln_vel_Z))
                         
-                        self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
-                    else:
-                        self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, 0.0, 0.0))
+                    self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
+                    # else:
+                    #     self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, 0.0, 0.0))
 
 
 
