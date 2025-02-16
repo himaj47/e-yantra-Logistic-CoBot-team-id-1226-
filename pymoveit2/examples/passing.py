@@ -418,7 +418,7 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 30.0
+        self.force_threshold = 70.0
 
         self.callback_group = ReentrantCallbackGroup()
 
@@ -553,7 +553,7 @@ class MoveItJointControl(Node):
         return round(vel, 4)
 
     # checking if goal reached (with tolerance)
-    def goal_reached(self, error, tolerance = 0.005):
+    def goal_reached(self, error, tolerance = 0.01):
         '''
         Purpose:
         ---
@@ -600,11 +600,11 @@ class MoveItJointControl(Node):
         global task_ptr, signal, srv, placed, aruco_frame, netWrench
 
         if len(task_queue):
-            print("srv: " + str(srv))
+            # print("srv: " + str(srv))
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=4.3)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=25.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
@@ -623,7 +623,7 @@ class MoveItJointControl(Node):
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
                     
                     # checking if the goal is reached
-                    if ((self.goal_reached(error_x, tolerance=0.009) and self.goal_reached(error_y, tolerance=0.009) and self.goal_reached(error_z, tolerance=0.009)) or (netWrench >= self.force_threshold)):
+                    if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             self.box_attached = task_queue[task_ptr][0][1:]
@@ -635,7 +635,7 @@ class MoveItJointControl(Node):
                         #     self.magnet_on(self.box_attached)
 
                         elif task_queue[task_ptr][0] == "drop_config":
-                            print("box attached: " + str(self.box_attached))
+                            # print("box attached: " + str(self.box_attached))
                             # self.magnet_off(box_name=self.box_attached)
                             self.gripper_call(0.0)
 
@@ -649,7 +649,7 @@ class MoveItJointControl(Node):
                                 signal = True
                             else:
                                 aruco_transforms.pop(0)
-                                print("later = " + str(aruco_transforms))
+                                # print("later = " + str(aruco_transforms))
                             
                             self.box_placed = True
                         
@@ -659,12 +659,16 @@ class MoveItJointControl(Node):
                             self.box_placed = False
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
-                        # print(f"later task queue = {task_queue}")
+                        print(f"later task queue = {task_queue}")
 
                     # elif fstat < 3:
-                    ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
-                    ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
-                    ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
+                    # ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
+                    # ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
+                    # ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
+
+                    ln_vel_X = self.PID_controller(error=error_x, Kp=25.0)
+                    ln_vel_Y = self.PID_controller(error=error_y, Kp=25.0)
+                    ln_vel_Z = self.PID_controller(error=error_z, Kp=25.0)
 
                         # print("ln_vel_X: " + str(ln_vel_X), "  ln_vel_Y: " + str(ln_vel_Y), "  ln_vel_Z: " + str(ln_vel_Z))
                         
