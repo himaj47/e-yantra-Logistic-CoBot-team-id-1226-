@@ -16,6 +16,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Float32
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
+# from geometry_msgs.msg import Quaternion
+
 
 class CopyImu(Node):
 

@@ -66,6 +66,8 @@ install(
   scripts/test_nav.py
   scripts/res.py
   scripts/4bc.py
+  scripts/imu.py
+  scripts/5.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
