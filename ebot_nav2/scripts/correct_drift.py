@@ -11,6 +11,7 @@
 ################### IMPORT MODULES #######################
 import rclpy
 from rclpy.node import Node
+from tf2_ros.buffer import Buffer
 
 from ebot_docking.srv import DockSw
 from geometry_msgs.msg import PoseStamped
@@ -22,6 +23,9 @@ import time
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32
+from tf2_ros.transform_listener import TransformListener
+
+
 
 
 class NavigationDockingController(Node):
@@ -31,6 +35,8 @@ class NavigationDockingController(Node):
 
         # Initialize current position
         self.current_pose = None
+        self.tf_buffer=Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Set up odometry subscription
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
@@ -73,11 +79,15 @@ class NavigationDockingController(Node):
     #Function to have Current Robot Pose and Orientation
     def odometry_callback(self, msg):
         """Update the robot's current pose."""
-        
+        translation=self.tf_buffer.lookup_transform('/map','/odom',rclpy.time.Time())
+        dif_x=translation.transform.translation.x
+        dif_y=translation.transform.translation.y
+        _,_,dif_yaw=euler_from_quaternion([translation.transform.rotation.x,translation.transform.rotation.y,translation.transform.rotation.z,translation.transform.rotation.w])
+
         position = msg.pose.pose.position
         orientation = msg.pose.pose.orientation
         _, _, yaw = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
-        self.current_pose = (position.x, position.y, yaw)
+        self.current_pose = (position.x-dif_x, position.y-dif_y, yaw-dif_yaw)
     
 
     # def odometry_callback(self, msg:Float32):
