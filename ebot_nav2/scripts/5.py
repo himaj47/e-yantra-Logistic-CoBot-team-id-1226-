@@ -23,6 +23,9 @@ import time
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
 from usb_servo.srv import ServoSw
+
+from std_srvs.srv import Trigger
+
 # import 
 class NavigationDockingController(Node):
     def __init__(self):
@@ -369,11 +372,11 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
 
 
                     if docking_success:
@@ -504,11 +507,11 @@ class NavigationDockingController(Node):
             if int(box[3]) % 2 == 0:
                 
                 self.get_logger().info('Going to Conveyor 1')
-                self.conveyor_pose(box,conveyor=1)
+                self.conveyor_pose(box,conveyor=2)
                 receive_pos=1
             else:
                 self.get_logger().info('Going to Conveyor 2')
-                self.conveyor_pose(box,conveyor=2)
+                self.conveyor_pose(box,conveyor=1)
                 receive_pos=0
         
         self.get_logger().info(f'Task Completed SuccessFully...')
