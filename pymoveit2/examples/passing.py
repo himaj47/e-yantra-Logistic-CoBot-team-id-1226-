@@ -51,7 +51,7 @@ task_queue = []
 task_ptr = 0
 
 # service handler flags
-srv = True
+srv = False
 placed = False
 
 # aruco frame
