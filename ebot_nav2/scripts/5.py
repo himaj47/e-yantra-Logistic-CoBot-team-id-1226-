@@ -36,7 +36,8 @@ class NavigationDockingController(Node):
         self.current_pose = None
 
         # Set up odometry subscription
-        self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+        # self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odometry_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
         self.receive_waypoint = [
@@ -73,7 +74,10 @@ class NavigationDockingController(Node):
         # self.payload_client = self.create_client(PayloadSW, '/payload_sw')
         # while not self.payload_client.wait_for_service(timeout_sec=1.0):
         #     self.get_logger().info('Waiting for PayloadSW service...')
-
+        self.imu=self.create_client(Trigger,'/reset_imu')
+        while not self.imu.wait_for_service(1.0):
+            self.get_logger().info(f'waiting for imu seervice ')
+        
         self.drop_box=self.create_client(ServoSw,'/toggle_usb_servo')
         while not self.drop_box.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Waiting for Dropping of Box..')
@@ -371,12 +375,14 @@ class NavigationDockingController(Node):
                
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
+                    # fut =self.imu.call_async(Trigger.Request())
+                    # self.get_logger().info(f'IMU Reset {fut.result()}')
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
 
 
                     if docking_success:
@@ -384,7 +390,7 @@ class NavigationDockingController(Node):
                         box_req=self.box_payload(pickup=True) 
                        
                         if box_req.success:
-                            self.get_logger().info('Task Completed Successfully ')
+                            self.get_logger().info('Receive  Successfully ')
                             self.actions_triggered[current_waypoint-1] = True 
                             passed_point =passed_point+1    # update passed point
                             return box_req.message            
@@ -438,13 +444,15 @@ class NavigationDockingController(Node):
                 current_waypoint = feedback.current_waypoint+passed_point
                
                 if current_waypoint in [2,4,6] and not self.actions_triggered[current_waypoint-1]:
+                    # fut =self.imu.call_async(Trigger.Request())
+                    # self.get_logger().info(f'IMU Reset {fut.result()}')
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.07, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.00, rack_number='') 
+                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.07, rack_number='') 
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:

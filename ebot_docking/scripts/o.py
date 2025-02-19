@@ -258,7 +258,7 @@ class MyRobotDockingController(Node):
 
         # Control parameters
         safe_distance = self.safe_dist  # 0.06
-        min_orient_error = 0.025  # Adjusted for finer angular precision
+        min_orient_error = 0.05  # Adjusted for finer angular precision
         kp_linear = 1.5  # Proportional gain for linear control
         kp_angular =-1.2  # Proportional gain for angular control
         kd_angular = -0.0002 # Derivative gain for angular control

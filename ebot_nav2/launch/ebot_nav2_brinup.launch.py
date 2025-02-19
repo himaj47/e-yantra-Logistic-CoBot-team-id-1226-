@@ -90,7 +90,7 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='false',
+        default_value='False',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -234,7 +234,7 @@ def generate_launch_description():
     # ld.add_action(declare_mapper_online_async_param_cmd)
     # ld.add_action(mapper_online_async_param_launch)
 
-    # ld.add_action(bringup_cmd_group)
+    ld.add_action(bringup_cmd_group)
    
 
     return ld
