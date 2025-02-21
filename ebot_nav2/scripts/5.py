@@ -41,30 +41,30 @@ class NavigationDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
         self.receive_waypoint = [
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
         
         ]
         self.receive_waypoint1 = [
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
         
         ]
         self.receive_waypoint2 = [
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(2.80, -2.54, -1.57),  # recieve pose  0.95, -2.54, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
+            self.create_goal_pose(2.80, -2.60, -1.57),  # recieve pose  0.95, -2.60, 1.87
         
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(3.12, 1.75, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
-            self.create_goal_pose(3.12, 1.75, -1.57),  # Conveyor 2
+            self.create_goal_pose(2.97, 1.88, 1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            self.create_goal_pose(2.97, 1.88, 1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(2.75,  -1.34, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(2.75,  -1.34, -1.57),  # Conveyor 1
+            self.create_goal_pose(2.71,  -1.28, 1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(2.71,  -1.28, 1.57),  # Conveyor 1
         ]
 
         # Flags to ensure each action is triggered only once
@@ -378,11 +378,11 @@ class NavigationDockingController(Node):
                     # fut =self.imu.call_async(Trigger.Request())
                     # self.get_logger().info(f'IMU Reset {fut.result()}')
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.15, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.15, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.07, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.30, orientation_angle=3.15, rack_number='')  
 
 
                     if docking_success:
@@ -449,10 +449,10 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.07, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.01, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.07, rack_number='') 
+                        docking_success = self.initiate_docking(target_distance=0.40, orientation_angle=3.01, rack_number='') 
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:

@@ -22,8 +22,8 @@ from pymoveit2.robots import ur5
 import tf_transformations
 
 from pymoveit2 import MoveIt2Servo
-from linkattacher_msgs.srv import AttachLink
-from linkattacher_msgs.srv import DetachLink
+# from linkattacher_msgs.srv import AttachLink
+# from linkattacher_msgs.srv import DetachLink
 from ur_msgs.srv import SetIO
 
 from tf2_ros import TransformException
@@ -256,7 +256,7 @@ class TfFinder(Node):
                     signal = False
 
                     for tranform in aruco_transforms:
-                        box_num = int(tranform.strip("1226_base_"))
+                        box_num = int(tranform.replace("1226_base_", ""))
 
                         if not self.task_done[box_num]:
                             print(f"printing transform = {tranform}")
@@ -391,7 +391,7 @@ class TfFinder(Node):
         for frame in frames_dict:
             if frame.startswith("1226_base_"):
                 if frame != "1226_base_6":
-                    frame_id = int(frame.strip("1226_base_"))
+                    frame_id = int(frame.replace("1226_base_", ""))
 
                     if not self.task_done[frame_id]:
                         aruco_transforms.append(frame)
