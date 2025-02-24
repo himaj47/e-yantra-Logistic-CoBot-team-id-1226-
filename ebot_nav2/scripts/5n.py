@@ -91,8 +91,8 @@ class NavigationDockingController(Node):
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(2.71,  -1.23, 1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(2.71,  -1.23, 1.57),  # Conveyor 1
+            self.create_goal_pose(2.01,  -1.29, 1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(2.01,  -1.29, 1.57),  # Conveyor 1
         ]
 
 
@@ -116,9 +116,9 @@ class NavigationDockingController(Node):
         while not self.docking_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Waiting for DockSw service...')
         
-        # self.box_recieve=self.create_client(SetBool,'/passing_service')
-        # while not self.box_recieve.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('Waiting for box_payload  service...')
+        self.box_recieve=self.create_client(SetBool,'/passing_service')
+        while not self.box_recieve.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for box_payload  service...')
             
     #Function to have Current Robot Pose and Orientation
     def odometry_callback(self, msg):
@@ -420,17 +420,17 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.23, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.23, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.23, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
 
 
                     if docking_success:
                         time.sleep(1.0)
-                        # box_req=self.box_payload(pickup=True) 
-                       
+                        box_req=self.box_payload(pickup=True) 
+                        
                         # if box_req.success:
                         self.get_logger().info('Receive Completed Successfully ')
                         self.actions_triggered[current_waypoint-1] = True 
@@ -537,7 +537,7 @@ class NavigationDockingController(Node):
         '''
 
         """Run the navigation task and manage docking and payload services at specific waypoints."""
-        self.set_initial_pose()
+        # self.set_initial_pose()
         self.navigator.waitUntilNav2Active()
         global passed_point
        
@@ -552,16 +552,6 @@ class NavigationDockingController(Node):
            
         self.get_logger().info('Going to Receive Pose')
         box=self.recieve_pose(pose=receive_pos)
-        # if int(box[3]) % 2 == 0:
-            
-        #     self.get_logger().info('Going to Conveyor 1')
-        #     self.conveyor_pose(box,conveyor=2)
-        #     receive_pos=1
-        # else:
-        #     self.get_logger().info('Going to Conveyor 2')
-        #     self.conveyor_pose(box,conveyor=1)
-        #     receive_pos=0
-
         self.get_logger().info('Going to Conveyor 1')
         self.conveyor_pose(box,conveyor=1)
         receive_pos=1
