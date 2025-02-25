@@ -69,13 +69,13 @@ class NavigationDockingController(Node):
         #     self.create_goal_pose(-1.75,  0.34, -1.57),  # Conveyor 1
         # ]
         self.receive_waypoint = [
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
         
         ]
         self.receive_waypoint1 = [
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
         
         ]
         self.receive_waypoint2 = [
@@ -85,14 +85,14 @@ class NavigationDockingController(Node):
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2  2.42,  2.55, -1.57
-            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2
+            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(2.01,  -1.29, 1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(2.01,  -1.29, 1.57),  # Conveyor 1
+            self.create_goal_pose(2.01,  -1.29, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(2.01,  -1.29, -1.57),  # Conveyor 1
         ]
 
 
@@ -427,9 +427,9 @@ class NavigationDockingController(Node):
                     if pose==2:
                         docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.05, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.05, rack_number='')  
 
 
                     if docking_success:
@@ -496,10 +496,10 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=0.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=-0.05, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=0.00, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=-0.05, rack_number='')  
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:

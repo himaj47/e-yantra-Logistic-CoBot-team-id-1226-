@@ -68,6 +68,8 @@ install(
   scripts/4bc.py
   scripts/imu.py
   scripts/5.py
+  scripts/5n.py
+  scripts/5t.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
