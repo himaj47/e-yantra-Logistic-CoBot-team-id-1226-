@@ -149,6 +149,14 @@ def generate_launch_description():
        output='screen',
        parameters=[os.path.join(ebot_real_nav2_dir, 'config', 'ekf.yaml'), {'use_sim_time': use_sim_time}] ##Loads the ekf.yaml file
     )
+
+    robot_localization_node_ukf = Node(
+       package='robot_localization',
+       executable='ukf_node',
+       name='ukf_filter',
+       output='screen',
+       parameters=[os.path.join(ebot_real_nav2_dir, 'config/ukf.yaml'), {'use_sim_time': use_sim_time}]
+)
     
     pkg_share = FindPackageShare(package='ebot_nav2').find('ebot_nav2')
     xacro_file = os.path.join(pkg_share, 'models/','ebot/', 'ebot_trolley.xacro')
@@ -233,6 +241,7 @@ def generate_launch_description():
 
     # ld.add_action(declare_mapper_online_async_param_cmd)
     # ld.add_action(mapper_online_async_param_launch)
+    # ld.add_action(robot_localization_node_ukf)
 
     ld.add_action(bringup_cmd_group)
    
