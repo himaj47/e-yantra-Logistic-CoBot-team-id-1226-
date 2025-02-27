@@ -431,7 +431,9 @@ class MoveItJointControl(Node):
         )
 
         # timer for servo motion
-        self.servoing = self.create_timer(0.001, self.servo_motion)
+        # self.servoing = self.create_timer(0.001, self.servo_motion)
+        self.servoing = self.create_timer(0.05, self.servo_motion)
+
 
         # clients 
         # self.gripper_control_attach = self.create_client(AttachLink, '/GripperMagnetON')
