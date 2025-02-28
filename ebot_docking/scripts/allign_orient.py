@@ -4,8 +4,9 @@
 
 # ###
 # This ROS2 script is designed to control a robot's docking behavior with a rack. 
-# It utilizes odometry data, ultrasonic sensor readings, and provides docking control through a custom service. 
-# The script handles both linear and angular motion to achieve docking alignment and execution.
+# It utilizes orientation data, ultrasonic sensor readings, and provides docking control through a custom service. 
+# The script handles angular motion to achieve docking alignment and execution.
+# Above  Script is only made to Allign with the Conveyor
 # ###
 
 
@@ -13,7 +14,7 @@
 # Team ID:           LB#1226 
 # Theme:             Cosmo Logistic 
 # Author List:       Prathmesh Atkale 
-# Filename:          ebot_docking_service_task2b.py 
+# Filename:          allign_orient.py 
 # Functions:         calculate_angular_error, calculate_linear_error, controller_loop, dock_control_callback , main
 
 '''
@@ -48,9 +49,7 @@ class MyRobotDockingController(Node):
        
         ultra_sub = self.create_subscription(Float32MultiArray, '/ultrasonic_sensor_std_float', self.ultra_callback, 10)
         self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
-        # self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
-        # self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
-        # self.ultrasonic_rr_sub = self.create_subscription(Range, '/ultrasonic_rr/scan', self.ultrasonic_rr_callback, 10)
+        
 
 
         # Create a service for docking control
@@ -60,10 +59,7 @@ class MyRobotDockingController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
        
-        # Initialize docking service client
-        # self.docking_client = self.create_client(DockSw, '/dock_control')
-        # while not self.docking_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('Waiting for DockSw service...')
+        
         self.robot_orient = None  # Initialize as None
         self.alpha=0.6
       
@@ -81,17 +77,10 @@ class MyRobotDockingController(Node):
     def ultra_callback(self,msg:Float32MultiArray):
         self.usrleft_value = msg.data[4]
         self.usrright_value = msg.data[5]
-        self.usrleft_value /=100
+        self.usrleft_value /=100  # Convert to cm  as above reading are in meters
         self.usrright_value /=100
         
-    # def ultrasonic_rl_callback(self, msg):
-    #     self.usrleft_value = msg.range
-
-    # def ultrasonic_rr_callback(self, msg):
-    #     self.usrright_value = msg.range
-        # self.usrleft_value/=100
-        # print(self.usrleft_value)
-
+    
     def odometry_callback(self, msg:Float32):
         if self.robot_orient is None:  # Initialize on first callback
             self.robot_orient = msg.data
@@ -102,23 +91,7 @@ class MyRobotDockingController(Node):
        
         
 
-    # def odometry_callback(self, msg):
-    #     # Update robot pose from odometry data
-    #     self.robot_pose[0] = msg.pose.pose.position.x
-    #     self.robot_pose[1] = msg.pose.pose.position.y
-    #     quaternion_array = msg.pose.pose.orientation
-    #     orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
-    #     _, _, yaw = euler_from_quaternion(orientation_list)
-    #     self.robot_pose[2] = yaw
-        # print(yaw)
-    #     # Update robot pose from odometry data
-    #     self.robot_pose[0] = msg.pose.pose.position.x
-    #     self.robot_pose[1] = msg.pose.pose.position.y
-    #     quaternion_array = msg.pose.pose.orientation
-    #     orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
-    #     _, _, yaw = euler_from_quaternion(orientation_list)
-    #     self.robot_pose[2] = yaw
-
+    
     
 
     def calculate_angular_error(self, Kp_angular, Kd_angular, desired_yaw, min_orient_error, prev_angular_error):
@@ -168,7 +141,7 @@ class MyRobotDockingController(Node):
         '''
 
         # Calculate angular error and normalize it
-        # angular_error = (desired_yaw - self.robot_pose[2])-3.24  
+         
         #for Odometry hardware
         angular_error=(desired_yaw-self.robot_orient)
         angular_error = math.atan2(math.sin(angular_error), math.cos(angular_error))  # Normalize to [-pi, pi]
@@ -285,15 +258,7 @@ class MyRobotDockingController(Node):
         self.docking_complete = True
         self.get_logger().info("Docking complete.")
         self.is_docking = False
-        # angular_vel = 0.0  # Stop angular correction once aligned
-        # self.linear_error = self.calculate_linear_error(kp_linear, safe_distance)
-
-        # # Generate and publish velocity commands for linear movement
-        # twist_msg = Twist()
-        # twist_msg.angular.z = angular_vel
-        # twist_msg.linear.x = -min(self.linear_error, max_linear_vel) 
-        # self.cmd_vel_pub.publish(twist_msg)
-
+        
 
     def dock_control_callback(self, request, response):
         '''

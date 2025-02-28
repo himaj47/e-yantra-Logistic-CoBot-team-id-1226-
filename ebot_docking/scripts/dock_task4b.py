@@ -69,16 +69,12 @@ class MyRobotDockingController(Node):
     def ultra_callback(self,msg:Float32MultiArray):
         self.usrleft_value = msg.data[4]
         self.usrright_value = msg.data[5]
+        self.usrleft_value /=100  # Convert to cm  as above reading are in meters
+        self.usrright_value /=100
         
     def odometry_callback(self, msg:Float32):
         self.robot_orient=msg.data
-    #     # Update robot pose from odometry data
-    #     self.robot_pose[0] = msg.pose.pose.position.x
-    #     self.robot_pose[1] = msg.pose.pose.position.y
-    #     quaternion_array = msg.pose.pose.orientation
-    #     orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
-    #     _, _, yaw = euler_from_quaternion(orientation_list)
-    #     self.robot_pose[2] = yaw
+    
 
     
 

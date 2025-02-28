@@ -57,11 +57,10 @@ install(
 
 install(PROGRAMS
 	scripts/ebot_docking_boilerplate.py
-  scripts/o.py
+  scripts/allign_orient.py
   scripts/dock_task4b.py
-  scripts/s.py
-  scripts/to.py
-  scripts/no.py
+  scripts/send_dock.py
+  scripts/ebot_docking_task5.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

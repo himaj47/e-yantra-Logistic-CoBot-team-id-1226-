@@ -3,8 +3,8 @@
 # Team ID:          [ LB#1226 ]
 # Theme:            [ Cosmo Logistic ]
 # Author List:      [ Prathmesh Atkale ]
-# Filename:         [ ebot_nav2_cmd_task3b.py ]
-# Functions:        [ create_goal_pose, initiate_payload_action ,box_payload,initiate_docking,set_initial_pose, execute_navigation, main]
+# Filename:         [ ebot_nav2_task4b_swi_conveyor.py ]
+# Functions:        [ create_goal_pose ,initiate_docking,set_initial_pose, execute_navigation, main]
 # Global variables: [passed_point]
 '''
 
@@ -34,31 +34,27 @@ class NavigationDockingController(Node):
 
         # Set up odometry subscription
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
-        # self.odom_sub = self.create_subscription(Float32, '/orientation', self.odometry_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         global pre_goal
         self.arm_pose = [
-            self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
-            self.create_goal_pose(3.446, -2.59, -1.57),  # recieve pose  0.95, -2.54, 1.87
-        #    self.create_goal_pose(0.49, -2.52, 0.99), 
-        #    self.create_goal_pose(0.49, -2.52, 0.99), 
+            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
+        
         ]
         
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
-            self.create_goal_pose(3.12, 1.62, -1.57),  # Conveyor 2
-            # self.create_goal_pose(2.24, 3.03, 0.69),
-            # self.create_goal_pose(2.24, 3.03, 0.69),
+            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2
+           
         ]
                                                                                                                      
         self.conveyor1_waypoint=[
 
-            self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(2.75,  -1.342, -1.57),  # Conveyor 1
-            # self.create_goal_pose(-4.33,  3.04, 0.7), 
-            # self.create_goal_pose(-4.33,  3.04, 0.7), 
-        ]
+            self.create_goal_pose(1.95,  -1.23, 1.57),  # Conveyor 1  -4.4,  2.89, -1.57
+            self.create_goal_pose(1.95,  -1.23, 1.57),  # Conveyor 1
+           
+        ]   
         # Flags to ensure each action is triggered only once
         self.actions_triggered = [False, False,False,False,False,False]  # One per waypoint
         self.docking_in_progress = False  # Flag to track docking status
@@ -79,10 +75,7 @@ class NavigationDockingController(Node):
         self.current_pose = (position.x, position.y, yaw)
     
 
-    # def odometry_callback(self, msg:Float32):
-    #     self.robot_orient=msg.data
-
-    #     print(self.robot_orient)
+    
     def create_goal_pose(self, x, y, yaw):
         '''
         Purpose:
@@ -221,6 +214,25 @@ class NavigationDockingController(Node):
         self.get_logger().info("Initial pose set for eBot")
     
     def pose_arm(self,pose):
+        """
+        Purpose:
+        ---
+        This function controls the robot's waypoint navigation and docking process at a specific location. 
+        It follows waypoints stored in `self.arm_pose`, triggers docking and payload drop actions 
+        at designated waypoints, and ensures successful execution of the task.
+
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.pose_arm()
+        """
         if pose==0:
             self.navigator.followWaypoints(self.arm_pose[:])
            
@@ -233,10 +245,10 @@ class NavigationDockingController(Node):
                 current_waypoint = feedback.current_waypoint+passed_point
                 # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
                 # Handle actions for the first two waypoints
-                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
+                if current_waypoint in [3] and not self.actions_triggered[current_waypoint-1]:
                     # self.get_logger().info(f'Initiating payload pickup at waypoint {current_waypoint}')
                     
-                    docking_success = self.initiate_docking(target_distance=0.45, orientation_angle=0.00, rack_number='') 
+                    docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     if docking_success:
                         self.get_logger().info('Task Completed Successfully ')
                         time.sleep(0.8)
@@ -253,9 +265,111 @@ class NavigationDockingController(Node):
             return  # Stop further execution if phase 1 fails
         
         
-        # passed_point =passed_point+1
+       
+    def conveyor2_pose(self):
+        """
+        Purpose:
+        ---
+        This function controls the robot's waypoint navigation and docking process at a specific location. 
+        It follows waypoints stored in `self.conveyor2_waypoint`, triggers docking and payload drop actions 
+        at designated waypoints, and ensures successful execution of the task.
+
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.conveyor2_pose()
+        """
+
+        self.navigator.followWaypoints(self.conveyor2_waypoint[:])
+        global passed_point
+        while not self.navigator.isTaskComplete():
+            feedback = self.navigator.getFeedback()
+            if feedback:
+                # global current_waypoint
+                current_waypoint = feedback.current_waypoint+passed_point
+                # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
+                # Handle actions for the first two waypoints
+                if current_waypoint in [1] and not self.actions_triggered[current_waypoint-1]:
+                    # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
+                    docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=2.97, rack_number='')  
+                    # Proceed with payload drop once docking is successful
+                    if docking_success:
+                        self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
+                        time.sleep(0.8)
+                        passed_point =passed_point+1
+                        self.actions_triggered[current_waypoint-1] = True
+                    else:
+                        self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
+                        return  # Stop further execution if docking fails
+                    
+        
+        result = self.navigator.getResult()
+        if result == TaskResult.SUCCEEDED:
+            self.get_logger().info('conveyor2_pose completed successfully')
+        else:
+            self.get_logger().error('conveyor2_pose. Navigation halted.')
+            return  # Stop further execution if phase 1 fails
 
 
+    def conveyor1_pose(self):
+        """
+        Purpose:
+        ---
+        This function controls the robot's waypoint navigation and docking process at a specific location. 
+        It follows waypoints stored in `self.conveyor1_waypoint`, triggers docking and payload drop actions 
+        at designated waypoints, and ensures successful execution of the task.
+
+        Input Arguments:
+        ---
+        None
+
+        Returns:
+        ---
+        None
+
+        Example call:
+        ---
+        self.conveyor1_pose()
+        """
+        self.navigator.followWaypoints(self.conveyor1_waypoint[:])
+        global passed_point
+        while not self.navigator.isTaskComplete():
+            feedback = self.navigator.getFeedback()
+            if feedback:
+                # global current_waypoint
+                current_waypoint = feedback.current_waypoint+passed_point
+                # self.get_logger().info(f'Current waypoint : "{current_waypoint}"')
+                # Handle actions for the first two waypoints
+                if current_waypoint in [2] and not self.actions_triggered[current_waypoint-1]:
+                    # self.get_logger().info(f'Initiating payload drop at waypoint {current_waypoint}')
+                    docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=2.97, rack_number='')  
+            
+                    # Proceed with payload drop once docking is successful
+                    if docking_success:
+                        self.get_logger().info(f'Docking successful.  {current_waypoint}')
+                        time.sleep(0.5)
+                       
+                        passed_point =passed_point+1
+                        self.actions_triggered[current_waypoint-1] = True
+                    else:
+                        self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
+                        return  # Stop further execution if docking fails
+                    
+        
+        result = self.navigator.getResult()
+        if result == TaskResult.SUCCEEDED:
+            self.get_logger().info(' conveyor1_pose completed successfully')
+        else:
+            self.get_logger().error('conveyor1_pose failed. Navigation halted.')
+            return  # Stop further execution if phase 1 fails
+        
 
     def execute_navigation(self):
         '''
@@ -292,6 +406,14 @@ class NavigationDockingController(Node):
         
             
        
+        
+    
+        self.get_logger().info('Going to Conveyor 2')
+        self.conveyor2_pose()
+
+        self.get_logger().info('Going to Conveyor 1')
+        self.conveyor1_pose()
+        
         self.get_logger().info('Going to arm Pose')
         self.pose_arm(pose=receive_pos)
        

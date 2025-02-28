@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
+
+
+## Overview
+
+# ###
+# Above Script is only made request or have a Test on given Dock orientation and Distance
+# ###
 '''
 # Team ID:          [ LB#1226 ]
 # Theme:            [ Cosmo Logistic ]
 # Author List:      [ Prathmesh Atkale ]
-# Filename:         [ ebot_nav2_cmd_task4c.py ]
-# Functions:        [ create_goal_pose, initiate_payload_action ,box_payload,initiate_docking,set_initial_pose, recieve_pose, conveyor_pose, execute_navigation, main]
+# Filename:         [ send_dock.py ]
+# Functions:        [  initiate_docking, execute_navigation, main]
 # Global variables: [passed_point,  total_box, receive_pos]
 '''
 
@@ -132,9 +139,7 @@ class NavigationDockingController(Node):
        
         
         self.get_logger().info(f'Task Completed SuccessFully...')
-        # yaw=euler_from_quaternion([0.5778,-0.4822,0.0886,0.6526])
-        # sec=euler_from_quaternion([0.000,0.000,0.0289,-0.9996])
-        # print(sec)
+        
         self.initiate_docking(target_distance=0.70 ,orientation_angle=0.00,rack_number='')
 ##################### MAIN FUNCTION #######################
 

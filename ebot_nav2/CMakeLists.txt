@@ -60,16 +60,13 @@ install(
   PROGRAMS
   scripts/pose_detector.py
   scripts/pf_pose_saver.py
-  scripts/4b.py
-  scripts/a.py
-  scripts/c2.py
-  scripts/test_nav.py
+  scripts/ebot_nav2_task4b_swi_conveyor.py
+  scripts/ebot_nav2_task4b.py
+  scripts/ebot_nav2_task6.py
+  scripts/ebot_nav2_task5.py
   scripts/res.py
-  scripts/4bc.py
   scripts/imu.py
-  scripts/5.py
-  scripts/5n.py
-  scripts/5t.py
+  scripts/ebot_nav2_test_task5.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

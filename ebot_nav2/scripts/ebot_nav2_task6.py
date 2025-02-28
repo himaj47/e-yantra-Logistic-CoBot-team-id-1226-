@@ -3,8 +3,8 @@
 # Team ID:          [ LB#1226 ]
 # Theme:            [ Cosmo Logistic ]
 # Author List:      [ Prathmesh Atkale ]
-# Filename:         [ ebot_nav2_cmd_task4c.py ]
-# Functions:        [ create_goal_pose, initiate_payload_action ,box_payload,initiate_docking,set_initial_pose, recieve_pose, conveyor_pose, execute_navigation, main]
+# Filename:         [ ebot_nav2_task6.py ]
+# Functions:        [ create_goal_pose ,box_payload,initiate_docking,set_initial_pose, recieve_pose, conveyor_pose, box_dropping, execute_navigation, main]
 # Global variables: [passed_point,  total_box, receive_pos]
 '''
 
@@ -23,7 +23,7 @@ from tf2_ros.buffer import Buffer
 import time
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
-# from usb_servo.srv import ServoSw
+from usb_servo.srv import ServoSw
 from tf2_ros.transform_listener import TransformListener
 
 from std_srvs.srv import Trigger
@@ -38,61 +38,36 @@ class NavigationDockingController(Node):
         self.current_pose = None
 
         # Set up odometry subscription
-        # self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+        
         self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odometry_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
-        # self.receive_waypoint = [
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
         
-        # ]
-        # self.receive_waypoint1 = [
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
-        
-        # ]
-        # self.receive_waypoint2 = [
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
-        #     self.create_goal_pose(-1.75,2.68, 3.28),  # recieve pose  0.95,2.43, 1.87
-        
-        # ]
-        
-        # self.conveyor2_waypoint = [
-        #     self.create_goal_pose(-2.07,-3.08, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
-        #     self.create_goal_pose(-2.07,-3.08, -1.57),  # Conveyor 2
-        # ]
-
-        # self.conveyor1_waypoint=[
-       
-        #     self.create_goal_pose(-1.75,  0.34, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-        #     self.create_goal_pose(-1.75,  0.34, -1.57),  # Conveyor 1
-        # ]
         self.receive_waypoint = [
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
         
         ]
         self.receive_waypoint1 = [
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
         
         ]
         self.receive_waypoint2 = [
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  0.95, -2.65, 1.87
+            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  2.80, -2.65, 1.57
         
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2  2.42,  2.55, -1.57
+            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2  2.97, 1.84, -1.57
             self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(2.01,  -1.29, -1.57),  # Conveyor 1  -4.4,  2.89, -1.57
-            self.create_goal_pose(2.01,  -1.29, -1.57),  # Conveyor 1
+            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1  1.95,  -1.22, -1.57
+            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1
         ]
 
 
@@ -103,14 +78,11 @@ class NavigationDockingController(Node):
 
         self.tf_buffer=Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-        # Initialize payload service client
-        # self.payload_client = self.create_client(PayloadSW, '/payload_sw')
-        # while not self.payload_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('Waiting for PayloadSW service...')
+        
 
-        # self.drop_box=self.create_client(ServoSw,'/toggle_usb_servo')
-        # while not self.drop_box.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('Waiting for Dropping of Box..')
+        self.drop_box=self.create_client(ServoSw,'/toggle_usb_servo')
+        while not self.drop_box.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for Dropping of Box..')
         # Initialize docking service client
 
         self.imu=self.create_client(Trigger,'/reset_imu')
@@ -133,19 +105,43 @@ class NavigationDockingController(Node):
         _, _, yaw = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.current_pose = (position.x, position.y, yaw)
 
-    # def odometry_callback(self, msg:Odometry):
-    #     """Update the robot's current pose."""
-    #     translation=self.tf_buffer.lookup_transform('odom','map',rclpy.time())
-    #     dif_x=translation.transform.translation.x
-    #     dif_y=translation.transform.translation.y
-    #     _,_,dif_yaw=euler_from_quaternion([translation.transform.rotation.x,translation.transform.rotation.y,translation.transform.rotation.z,translation.transform.rotation.w])
-    #     print(f'dif_X:{dif_x} , dif_Y:{dif_y} , dif_yaw:{dif_yaw}')
+   
+    def box_dropping(self,pickup):
+        '''
+        Purpose:
+        ---
+        This function initiates a box-dropping action by calling a service to perform the specified servo action.  
+        It sends an asynchronous service request and waits for the result.  
 
-    #     position = msg.pose.pose.position
-    #     orientation = msg.pose.pose.orientation
-    #     _, _, yaw = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
-    #     self.current_pose = (position.x-dif_x, position.y-dif_y, yaw-dif_yaw)
+        Input Arguments:
+        ---
+        `pickup` : [bool]  
+            A boolean value indicating the desired servo state for dropping the box:  
+            - `True` to activate the servo for the drop action.  
 
+        Returns:
+        ---
+        `success` : [bool]  
+            Indicates whether the service call was successful.  
+
+        `message` : [str]  
+            A string containing additional information, typically from the service response.
+
+        Example Usage:
+        ---
+        # To initiate a drop action
+        success = self.box_dropping(True)
+        if success:
+            print('Box drop action succeeded.')
+        else:
+            print('Box drop action failed.')
+        '''  
+
+        req=ServoSw.Request()
+        req.servostate=pickup
+        future=self.drop_box.call_async(req)
+        rclpy.spin_until_future_complete(self,future)
+        return future.result()
 
     def create_goal_pose(self, x, y, yaw):
         '''
@@ -197,52 +193,7 @@ class NavigationDockingController(Node):
     def yaw_to_quaternion(self, yaw):
         return [0.0, 0.0, math.sin(yaw / 2.0), math.cos(yaw / 2.0)]
 
-    # def initiate_payload_action(self, pickup,box_name):
-    #     '''
-    #     Purpose:
-    #     ---
-    #     This function initiates a payload action by calling a service to drop an item based on the input arguments.
-
-    #     Input Arguments:
-    #     ---
-    #     `pickup` : [bool]
-    #         Indicates the desired payload action:
-    #         - `False` to perform a drop action.
-
-    #     `box_name` : [str]
-    #         The name of the box involved in the payload action.
-
-    #     Returns:
-    #     ---
-    #     None
-
-    #     Example call:
-    #     ---
-    #     # To initiate a drop action
-    #     self.initiate_payload_action(False, 'box1')
-        
-    #     '''
-
-
-    #     """Call the payload service to either drop."""
-    #     req = PayloadSW.Request()
-    #     # req.receive = pickup
-    #     req.drop = not pickup
-    #     req.box_name = box_name
-    #     future = self.payload_client.call_async(req)
-    #     rclpy.spin_until_future_complete(self, future)
-    #     if future.result() is not None and future.result().success:
-    #         action = "Pickup" if pickup else "Drop"
-    #         self.get_logger().info(f'{action} action succeeded with message: {future.result().message}')
-    #     else:
-    #         self.get_logger().error('Payload service call failed.')
     
-    # def box_dropping(self,pickup):
-    #     req=ServoSw.Request()
-    #     req.servoState=pickup
-    #     future=self.drop_box.call_async(req)
-    #     rclpy.spin_until_future_complete(self,future)
-    #     return future.result()
 
     def box_payload (self,pickup):
         '''
@@ -438,11 +389,11 @@ class NavigationDockingController(Node):
                         time.sleep(1.0)
                         box_req=self.box_payload(pickup=True) 
                         
-                        # if box_req.success:
-                        self.get_logger().info('Receive Completed Successfully ')
-                        self.actions_triggered[current_waypoint-1] = True 
-                        passed_point =passed_point+1    # update passed point
-                        return           
+                        if box_req.success:
+                            self.get_logger().info('Receive Completed Successfully ')
+                            self.actions_triggered[current_waypoint-1] = True 
+                            passed_point =passed_point+1    # update passed point
+                            return  box_req.message       
                    
         
         result = self.navigator.getResult()
@@ -508,8 +459,8 @@ class NavigationDockingController(Node):
 
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
                         time.sleep(0.8)
-                        # self.initiate_payload_action(pickup=False,box_name=box_name)  # Drop at waypoint 
-                        # print(self.box_dropping(pickup=True))
+                         
+                        print(self.box_dropping(pickup=True))
                         passed_point =passed_point+1  # update passed point
                         self.actions_triggered[current_waypoint-1] = True
                     else:
@@ -558,23 +509,19 @@ class NavigationDockingController(Node):
 
         passed_point=0
         
-        # for i in range(total_box):
+        for i in range(total_box):
            
-        self.get_logger().info('Going to Receive Pose')
-        box=self.recieve_pose(pose=receive_pos)
-        self.get_logger().info('Going to Conveyor 1')
-        self.conveyor_pose(box,conveyor=1)
-        receive_pos=1
-        self.get_logger().info('Going to Receive Pose')
-        box=self.recieve_pose(pose=receive_pos)
-        self.get_logger().info('Going to Conveyor 2')
-        self.conveyor_pose(box,conveyor=2)
-        receive_pos=0
-        self.get_logger().info('Going to Receive Pose')
-        box=self.recieve_pose(pose=receive_pos)
-        self.get_logger().info('Going to Conveyor 1')
-        self.conveyor_pose(box,conveyor=1)
-        receive_pos=1
+            self.get_logger().info('Going to Receive Pose')
+            box=self.recieve_pose(pose=receive_pos)
+            if int(box[3]) % 2 == 0:
+                
+                self.get_logger().info('Going to Conveyor 1')
+                self.conveyor_pose(box,conveyor=1)
+                receive_pos=1
+            else:
+                self.get_logger().info('Going to Conveyor 2')
+                self.conveyor_pose(box,conveyor=2)
+                receive_pos=0
         
         self.get_logger().info(f'Task Completed SuccessFully...')
        

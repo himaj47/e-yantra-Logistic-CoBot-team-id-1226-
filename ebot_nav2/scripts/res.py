@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+This ROS 2 script resets the IMU and odometry by calling `/reset_imu` and `/reset_odom` services.  
+It initializes a node, waits for the services, and sends asynchronous reset requests.  
+The reset is triggered only once using a flag (`reset_call`).  
+Currently, it does not handle service responses properly due to non-blocking calls.  
+"""
+
+
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
