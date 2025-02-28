@@ -7,7 +7,7 @@
 # Author List:      Himaj Joshi
 # Filename:         passing.py
 # Functions:        __init__, handle_request, check_transform, schedule_tasks, get_all_frames, mag_on_callback, mag_off_callback, rm_box_callback, magnet_on, magnet_off, PID_controller, goal_reached, servo_motion, main
-# Global variables: signal, aruco_transforms, flag, task_queue, task_ptr, srv, placed, lBoxPose, rBoxPose, EEF_link, ur5_configs
+# Global variables: signal, aruco_transforms, box_aruco_frame, flag, task_queue, task_ptr, srv, placed, fstat, netWrench, lBoxPose, rBoxPose, EEF_link, ur5_configs
 '''
 
 import rclpy
@@ -15,7 +15,6 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 
-from geometry_msgs.msg import TwistStamped
 import rclpy.time
 
 from pymoveit2.robots import ur5
@@ -35,6 +34,7 @@ from std_srvs.srv import SetBool
 from std_msgs.msg import Int64
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
+
 # signal: to signal when to look for new transforms
 signal = True 
 
@@ -50,40 +50,37 @@ task_queue = []
 # task_ptr: points to the current position under execution or that needs to be executed next
 task_ptr = 0
 
+# srv: shows whether or not a request for payload has been received from the ebot
+srv = False
+
+# placed: this flag shows whether or not the box is placed on the ebot
 # service handler flags
 srv = False
 placed = False
 
-# aruco frame
-aruco_frame = ""
+# box_aruco_frame: contains the payload/box frame_id picked up by the arm 
+box_aruco_frame = ""
 
 
 # ForceStatus
-enable_force_status = True
+# fstat: stores force status of arm
 fstat = 0
+
+# netWrench: stores EEF force status
 netWrench = 0.0
-netWrenchThres = 0.0
 
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
 lBoxPose = {
-    "box_name": [],
-    "position": [],     # "lBoxPose", 0.0, 0.0, 0.0
+    "position": [],     # eg. "Lbox1", x, y, z
     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
 }
 
 # rBoxPose: to store box_name, right box pose and its quaternion 
 rBoxPose = {
-    "box_name": [],
-    "position": [],     # "rBoxPose", 0.0, 0.0, 0.0
+    "position": [],     # eg. "Rbox1", x, y, z
     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
 }
-
-# # eBotPose: to store ebot pose and orientation in quaternion 
-# eBotPose = {
-#     "position": ["rBoxPose", 0.0, 0.0, 0.0],
-#     "quaternion": [0.9992, 0.0382, -0.0035, 0.0094]
-# }
 
 # EEF_link: to store EEF pose, quat and euler angles
 EEF_link = {
@@ -92,7 +89,7 @@ EEF_link = {
     "euler_angles": [0, 0, 0]
 }
 
-# ur5 configs: to store different ur5 configuration 
+# ur5 configs: to store different ur5 configuration (xyz and orientation)
 ur5_configs = {
 
     "default_config": {
@@ -131,20 +128,34 @@ class Services(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
     def handle_request(self, request, response):
-        global srv
-        global placed
+        '''
+        handles payload requests from ebot and activates the arm 
 
-        # this signifies that a request is received
+        Input Arguments:
+        ---
+        `request` :  [ Bool ]
+            request sent by ebot
+
+        `response` :  [ bool ]
+            response to ebot
+
+        Returns:
+        ---
+        response
+        '''
+
+        global srv, placed
+
+        # this signifies that a request is received and only then it will allow MoveItJointControl class's method servo motioin to control the arm
         srv = True
 
-        # this shows whether the box is placed on the ebot or not
+        # this shows that the box is not yet placed on the ebot
         placed = False
         self.get_logger().info('Incoming request\nreceive: %d' % (request.data))
 
         rate = self.create_rate(2, self.get_clock())
 
         while not placed:
-            # self.get_logger().info("Waiting for the box to be placed ...")
             self.vel=Twist()
             self.vel.linear.x=0.0
             self.vel.angular.z=0.0
@@ -152,7 +163,7 @@ class Services(Node):
             rate.sleep()
 
         response.success = True
-        response.message = aruco_frame
+        response.message = box_aruco_frame
         print("response returned")
         return response
 
@@ -165,15 +176,15 @@ class TfFinder(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.EEF_target_frame = "wrist_3_link"   # EEF frame
-        self.box_target_frame = "1226_base_"           # box frame
-        self.source_frame = "base_link"
-        self.ebot_aruco_frame = "1226_base_6"
+        self.box_target_frame = "1226_base_"     # box aruco frame
+        self.source_frame = "base_link"          # manipulator base link frame
+        self.ebot_aruco_frame = "1226_base_6"    # ebot aruco frame
         self.offset = 0.08
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
         self.task_done = [0]*15
 
-        # ....................................
+        # pointers to list's indexes, to schedule tasks
         self.left_pose_ptr = -1
         self.right_pose_ptr = -1
 
@@ -191,7 +202,6 @@ class TfFinder(Node):
     def EFF_nforce_callback(self, msg:Float64):
         global netWrench
         netWrench = msg.data
-        print("netWrench = " + str(netWrench))
 
     # checking all necessary transforms
     def check_transform(self):
@@ -208,16 +218,14 @@ class TfFinder(Node):
 
         Returns:
         ---
-        None
+        NonerBoxPose
 
         Example call:
         ---
         the function is called every 0.01 sec by ros2 timer
         '''
 
-        global aruco_transforms
-        global signal
-        global flag
+        global aruco_transforms, signal, flag
 
         try:
             # feedback
@@ -227,7 +235,7 @@ class TfFinder(Node):
                 rclpy.time.Time()
             )
 
-            # check for ebot aruco marker
+            # check for ebot aruco marker when received a request from ebot
             if srv:
                 try:
                     ebot_aruco = self.tf_buffer.lookup_transform(     # EEF w.r.t. base_link
@@ -244,14 +252,13 @@ class TfFinder(Node):
 
                 except TransformException as ex:
                     self.get_logger().info(f'Could not transform {self.ebot_aruco_frame} to {self.source_frame}: {ex}')
-                
 
-            # base_link to box transforms (aruco transforms)
+            # base_link to box transforms (aruco transforms) only if signal = True (i.e. when aruco_transform list is empty)
             if signal:
+                # this function call updates the list aruco_transforms
                 self.get_all_frames()
-                print(f"aruco transforms = {aruco_transforms}")
 
-                if len(aruco_transforms) > 0:
+                if len(aruco_transforms) > 0: 
                     flag = False
                     signal = False
 
@@ -272,41 +279,27 @@ class TfFinder(Node):
                                 # update the position key of lBoxPose
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
                                 lBoxPose["position"].append(lst)
-                                # lBoxPose["position"][0] = "lBoxPose" 
-                                # lBoxPose["position"][1] = base_to_box.transform.translation.x
-                                # lBoxPose["position"][2] = base_to_box.transform.translation.y
-                                # lBoxPose["position"][3] = base_to_box.transform.translation.z
 
-                                # change this too
-                                # lBoxPose["box_name"].append()
-                                # lbox = lBoxPose["box_name"]
-                                # print(f"lbox name = {lbox}, lbox y = {base_to_box.transform.translation.x}")
                                 self.schedule_tasks(box_pose=lBoxPose["position"][self.left_pose_ptr])
-                                # self.left_pose_ptr
+
                             else:
                                 self.right_pose_ptr += 1
                                 box_name = "Rbox" + tranform.strip("1226_base_")
                                 lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
 
                                 rBoxPose["position"].append(lst)
-                                
-                                # update the position key of rBoxPose
-                                # rBoxPose["position"][0] = "rBoxPose"
-                                # rBoxPose["position"][1] = base_to_box.transform.translation.x 
-                                # rBoxPose["position"][2] = base_to_box.transform.translation.y
-                                # rBoxPose["position"][3] = base_to_box.transform.translation.z
-                                # rBoxPose["box_name"] = "box" + tranform.strip("obj_")
-                                # rbox = rBoxPose["box_name"]
-                                # print(f"rbox name = {rbox}, rbox y = {base_to_box.transform.translation.x}")
                                 self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
+                            # this shows that task for box_num is done
                             self.task_done[box_num] = 1
 
+                # this means that no boxes are present
                 elif not flag:
+                    # goes back to the default position
                     self.schedule_tasks(end=True)
                     flag = True
             
-            # self.get_logger().info(str(EEF_to_base.transform.translation))
+            # updating EEF position and orientation for PID controller feedback 
             EEF_link["position"] = [EEF_to_base.transform.translation.x, EEF_to_base.transform.translation.y, EEF_to_base.transform.translation.z]
             EEF_link["quaternion"] = [EEF_to_base.transform.rotation.x, EEF_to_base.transform.rotation.y, EEF_to_base.transform.rotation.z, EEF_to_base.transform.rotation.w]
             EEF_link["euler_angles"] = tf_transformations.euler_from_quaternion(EEF_link["quaternion"])
@@ -342,7 +335,6 @@ class TfFinder(Node):
 
         # for box_pos in box_poses:
         if box_pose != None:
-            # task_queue.append(ur5_configs["start_config"]["position"])
 
             # if the Y coordinate of the box is greater than zero, this means that the box is on the left of the ur5 arm 
             if box_pose[2] > 0:
@@ -361,7 +353,6 @@ class TfFinder(Node):
         
         if end:
             # make ur5 go back to the default position and orientation
-            # task_queue.append(ur5_configs["start_config"]["position"])
             task_queue.append(ur5_configs["default_config"]["position"])
             
 
@@ -435,65 +426,10 @@ class MoveItJointControl(Node):
         self.servoing = self.create_timer(0.05, self.servo_motion)
 
 
-        # clients 
-        # self.gripper_control_attach = self.create_client(AttachLink, '/GripperMagnetON')
-        # self.gripper_control_detach = self.create_client(DetachLink, '/GripperMagnetOFF')
-
         self.gripper_control = self.create_client(SetIO, '/io_and_status_controller/set_io')
 
         while not self.gripper_control.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('EEF Tool service not available, waiting again...')
-
-        # while not self.gripper_control_attach.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('EEF /GripperMagnetON service not available, waiting again...')
-
-        # while not self.gripper_control_detach.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('EEF service /GripperMagnetOFF not available, waiting again...')
-
-    # callbacks
-    # def mag_on_callback(self, future):
-    #     try:
-    #         response = future.result()
-    #         print(f"response from /GripperON: {response}")
-    #     except Exception as e:
-    #         print("error: {e}")
-
-    # def mag_off_callback(self, future):
-    #     try:
-    #         response = future.result()
-    #         print(f"response from /GripperOFF: {response}")
-    #     except Exception as e:
-    #         print("error: {e}")
-
-    # def rm_box_callback(self, future):
-    #     try:
-    #         response = future.result()
-    #         # print(f"response from /SERVOLINK: {response}")
-    #     except Exception as e:
-    #         print("error: {e}")
-
-    # clients
-    # def magnet_on(self, box_name: str | None):
-    #     req = AttachLink.Request()
-    #     req.model1_name =  box_name     
-    #     req.link1_name  = 'link'       
-    #     req.model2_name =  'ur5'       
-    #     req.link2_name  = 'wrist_3_link'  
-
-    #     future = self.gripper_control_attach.call_async(req)
-    #     future.add_done_callback(self.mag_on_callback)
-    #     print(f"request for magnet on for {box_name} is sent!!")
-
-    # def magnet_off(self, box_name: str | None):
-    #     req = DetachLink.Request()
-    #     req.model1_name =  box_name     
-    #     req.link1_name  = 'link'       
-    #     req.model2_name =  'ur5'       
-    #     req.link2_name  = 'wrist_3_link'  
-
-    #     future = self.gripper_control_detach.call_async(req)
-    #     future.add_done_callback(self.mag_off_callback)
-    #     print(f"request for magnet off for box {box_name} is sent!!")
 
     def gripper_call(self, state):
         '''
@@ -599,14 +535,13 @@ class MoveItJointControl(Node):
         None
         '''
 
-        global task_ptr, signal, srv, placed, aruco_frame, netWrench
+        global task_ptr, signal, srv, placed, box_aruco_frame, netWrench
 
         if len(task_queue):
-            # print("srv: " + str(srv))
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=25.0)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=5.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
@@ -615,10 +550,7 @@ class MoveItJointControl(Node):
                 
             else:
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
-                if srv:
-                    # print(f"task pointer = {task_ptr}")
-                    # print(f"task queue = {task_queue}")
-                    
+                if srv:                
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0]
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1]
@@ -629,29 +561,22 @@ class MoveItJointControl(Node):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             self.box_attached = task_queue[task_ptr][0][1:]
-                            # self.magnet_on(self.box_attached)
                             self.gripper_call(1.0)
 
-                        # elif task_queue[task_ptr][0][0] == "R":
-                        #     self.box_attached = task_queue[task_ptr][0][1:]
-                        #     self.magnet_on(self.box_attached)
-
                         elif task_queue[task_ptr][0] == "drop_config":
-                            # print("box attached: " + str(self.box_attached))
-                            # self.magnet_off(box_name=self.box_attached)
                             self.gripper_call(0.0)
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
                             placed = True
 
-                            aruco_frame = self.box_attached
+                            box_aruco_frame = self.box_attached
 
                             if len(aruco_transforms) == 0:
-                                # if aruco transforms is empty, then updating signal to true means to look up for amy new aruco transforms
+                                # if aruco transforms is empty, then updating signal to true means to look up for any new aruco (box) transforms
                                 signal = True
                             else:
+                                # removing transforms when the task is done
                                 aruco_transforms.pop(0)
-                                # print("later = " + str(aruco_transforms))
                             
                             self.box_placed = True
                         
@@ -661,24 +586,12 @@ class MoveItJointControl(Node):
                             self.box_placed = False
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
-                        print(f"later task queue = {task_queue}")
 
-                    # elif fstat < 3:
-                    # ln_vel_X = self.PID_controller(error=error_x, Kp=4.3)
-                    # ln_vel_Y = self.PID_controller(error=error_y, Kp=4.3)
-                    # ln_vel_Z = self.PID_controller(error=error_z, Kp=4.3)
-
-                    ln_vel_X = self.PID_controller(error=error_x, Kp=25.0)
-                    ln_vel_Y = self.PID_controller(error=error_y, Kp=25.0)
-                    ln_vel_Z = self.PID_controller(error=error_z, Kp=25.0)
-
-                        # print("ln_vel_X: " + str(ln_vel_X), "  ln_vel_Y: " + str(ln_vel_Y), "  ln_vel_Z: " + str(ln_vel_Z))
+                    ln_vel_X = self.PID_controller(error=error_x, Kp=5.0)
+                    ln_vel_Y = self.PID_controller(error=error_y, Kp=5.0)
+                    ln_vel_Z = self.PID_controller(error=error_z, Kp=7.0)
                         
                     self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
-                    # else:
-                    #     self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, 0.0, 0.0))
-
-
 
 
 def main(args=None):
