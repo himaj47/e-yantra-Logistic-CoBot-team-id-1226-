@@ -69,6 +69,9 @@ fstat = 0
 # netWrench: stores EEF force status
 netWrench = 0.0
 
+# task_done: check if task done or not for a box number (0 - not done && 1 - done)
+task_done = [0]*15
+
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
 lBoxPose = {
@@ -182,7 +185,7 @@ class TfFinder(Node):
         self.offset = 0.08
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
-        self.task_done = [0]*15
+        # self.task_done = [0]*15
 
         # pointers to list's indexes, to schedule tasks
         self.left_pose_ptr = -1
@@ -225,7 +228,7 @@ class TfFinder(Node):
         the function is called every 0.01 sec by ros2 timer
         '''
 
-        global aruco_transforms, signal, flag
+        global aruco_transforms, signal, flag, task_done
 
         try:
             # feedback
@@ -265,7 +268,8 @@ class TfFinder(Node):
                     for tranform in aruco_transforms:
                         box_num = int(tranform.replace("1226_base_", ""))
 
-                        if not self.task_done[box_num]:
+                        # if not self.task_done[box_num]:
+                        if not task_done[box_num]:
                             print(f"printing transform = {tranform}")
                             base_to_box = self.tf_buffer.lookup_transform(
                                                     "base_link",
@@ -291,7 +295,8 @@ class TfFinder(Node):
                                 self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
                             # this shows that task for box_num is done
-                            self.task_done[box_num] = 1
+                            # self.task_done[box_num] = 1
+                            task_done[box_num] = 1
 
                 # this means that no boxes are present
                 elif not flag:
@@ -375,6 +380,7 @@ class TfFinder(Node):
         ---
         self.get_all_frames()
         '''
+        global task_done
 
         frames_yaml = self.tf_buffer.all_frames_as_yaml()
         frames_dict = yaml.safe_load(frames_yaml)
@@ -384,7 +390,8 @@ class TfFinder(Node):
                 if frame != "1226_base_6":
                     frame_id = int(frame.replace("1226_base_", ""))
 
-                    if not self.task_done[frame_id]:
+                    # if not self.task_done[frame_id]:
+                    if not task_done[frame_id]:
                         aruco_transforms.append(frame)
 
 
@@ -410,6 +417,7 @@ class MoveItJointControl(Node):
 
         # EEF force threshold
         self.force_threshold = 70.0
+        self.on_air = 50.0
 
         self.callback_group = ReentrantCallbackGroup()
 
@@ -535,7 +543,7 @@ class MoveItJointControl(Node):
         None
         '''
 
-        global task_ptr, signal, srv, placed, box_aruco_frame, netWrench
+        global task_ptr, signal, srv, placed, box_aruco_frame, netWrench, task_done
 
         if len(task_queue):
             if self.execute:
@@ -557,6 +565,7 @@ class MoveItJointControl(Node):
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
                     
                     # checking if the goal is reached
+                    # check which one to use "or" or "and" in if condition
                     if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
@@ -579,13 +588,23 @@ class MoveItJointControl(Node):
                                 aruco_transforms.pop(0)
                             
                             self.box_placed = True
-                        
+
+                        # ****************************************************************************************
+                        elif (task_queue[task_ptr][0] == "rbTopPose") or (task_queue[task_ptr][0] == "lbTopPose"):
+                            if netWrench <= self.on_air:
+                                self.no_box = True
+                                task_done[int(self.box_attached[-1])] = 0
+                                task_ptr += 2
+
+                                aruco_transforms.pop(0)
+
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             # once the box is dropped, wait until the client again requests on the /passing_service
                             srv = False
                             self.box_placed = False
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
+                        if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
 
                     ln_vel_X = self.PID_controller(error=error_x, Kp=5.0)
                     ln_vel_Y = self.PID_controller(error=error_y, Kp=5.0)
