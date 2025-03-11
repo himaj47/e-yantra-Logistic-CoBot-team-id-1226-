@@ -415,8 +415,8 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 70.0
-        self.on_air = 40.0
+        self.force_threshold = 68.0
+        self.on_air = 20.0
         self.is_box_attached = False
 
         self.callback_group = ReentrantCallbackGroup()
@@ -549,7 +549,7 @@ class MoveItJointControl(Node):
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=10.0)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=15.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
@@ -560,8 +560,8 @@ class MoveItJointControl(Node):
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
                 if srv:                
                     # PID control for EEF position
-                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0]
-                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1]
+                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] -0.05 
+                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
 
                     # self.is_box_attached = False
@@ -594,26 +594,30 @@ class MoveItJointControl(Node):
                             self.box_placed = True
 
                         # ****************************************************************************************
-                        elif ((task_queue[task_ptr][0] == "rbTopPose") or (task_queue[task_ptr][0] == "lbTopPose") and self.is_box_attached):
+                        elif self.is_box_attached and task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose":
+                            print(f"netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
                             if netWrench <= self.on_air:
-                                self.no_box = True
-                                task_done[int(self.box_attached[-1])] = 0
-                                task_ptr += 2
+                                # self.no_box = True
+                                try:
+                                    task_done[int(self.box_attached[-1])] = 0
+                                    task_ptr += 2
 
-                                self.is_box_attached = False
-                                aruco_transforms.pop(0)
+                                    self.is_box_attached = False
+                                    aruco_transforms.pop(0)
+                                except Exception as e:
+                                    print(f"error!! {e}")
 
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             # once the box is dropped, wait until the client again requests on the /passing_service
-                            srv = False
+                            srv = True
                             self.box_placed = False
 
                         if task_ptr < len(task_queue)-1: task_ptr += 1
                         if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
 
-                    ln_vel_X = self.PID_controller(error=error_x, Kp=10.0)
-                    ln_vel_Y = self.PID_controller(error=error_y, Kp=10.0)
-                    ln_vel_Z = self.PID_controller(error=error_z, Kp=15.0)
+                    ln_vel_X = self.PID_controller(error=error_x, Kp=15.0)
+                    ln_vel_Y = self.PID_controller(error=error_y, Kp=15.0)
+                    ln_vel_Z = self.PID_controller(error=error_z, Kp=18.0)
                         
                     self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
 
