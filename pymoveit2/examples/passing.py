@@ -558,10 +558,10 @@ class MoveItJointControl(Node):
                 
             else:
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
-                if srv:  
-                    if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1              
+                if srv:
+                    if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1 
                     # PID control for EEF position
-                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] -0.05 
+                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
 
@@ -569,7 +569,10 @@ class MoveItJointControl(Node):
                     
                     # checking if the goal is reached
                     # check which one to use "or" or "and" in if condition
-                    if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
+                    goal_reached = self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)
+
+                    # if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
+                    if (goal_reached or (netWrench >= self.force_threshold)):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             self.box_attached = task_queue[task_ptr][0][1:]
@@ -602,26 +605,27 @@ class MoveItJointControl(Node):
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
-                            print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
-                            if netWrench <= self.on_air:
-                                # self.no_box = True
-                                try:
-                                    print(f"box number = {self.box_attached[-1]}")
-                                    task_done[int(self.box_attached[-1])] = 0
-                                    task_ptr += 2
+                            if goal_reached:
+                                print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
+                                if netWrench <= self.on_air:
+                                    # self.no_box = True
+                                    try:
+                                        print(f"box number = {self.box_attached[-1]}")
+                                        task_done[int(self.box_attached[-1])] = 0
+                                        task_ptr += 3 # or 4
 
-                                    self.is_box_attached = False
-                                    aruco_transforms.pop(0)
-                                except Exception as e:
-                                    print(f"error!! {e}")
-                            print(f"self.is_box_attached = {self.is_box_attached}")
+                                        self.is_box_attached = False
+                                        aruco_transforms.pop(0)
+                                    except Exception as e:
+                                        print(f"error!! {e}")
+                                print(f"self.is_box_attached = {self.is_box_attached}")
 
 
                         task_ptr += 1
                         # if task_ptr < len(task_queue)-1: task_ptr += 1
                         # if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
 
-                        print(f"task_ptr = {task_ptr}")
+                        # print(f"task_ptr = {task_ptr}")
 
                     ln_vel_X = self.PID_controller(error=error_x, Kp=15.0)
                     ln_vel_Y = self.PID_controller(error=error_y, Kp=15.0)
