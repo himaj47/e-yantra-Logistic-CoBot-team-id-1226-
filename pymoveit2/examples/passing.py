@@ -558,7 +558,8 @@ class MoveItJointControl(Node):
                 
             else:
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
-                if srv:                
+                if srv:  
+                    if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1              
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0] -0.05 
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
@@ -577,6 +578,7 @@ class MoveItJointControl(Node):
                             print("self.is_box_attached = True")
 
                         elif task_queue[task_ptr][0] == "drop_config":
+                            print("reached drop config **************")
                             self.gripper_call(0.0)
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
@@ -593,12 +595,18 @@ class MoveItJointControl(Node):
                             
                             self.box_placed = True
 
+                        elif self.box_placed and task_queue[task_ptr][0] == "start_config":
+                            # once the box is dropped, wait until the client again requests on the /passing_service
+                            srv = True
+                            self.box_placed = False
+
                         # ****************************************************************************************
-                        elif self.is_box_attached and task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose":
-                            print(f"netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
+                        elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
+                            print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
                             if netWrench <= self.on_air:
                                 # self.no_box = True
                                 try:
+                                    print(f"box number = {self.box_attached[-1]}")
                                     task_done[int(self.box_attached[-1])] = 0
                                     task_ptr += 2
 
@@ -606,14 +614,14 @@ class MoveItJointControl(Node):
                                     aruco_transforms.pop(0)
                                 except Exception as e:
                                     print(f"error!! {e}")
+                            print(f"self.is_box_attached = {self.is_box_attached}")
 
-                        elif self.box_placed and task_queue[task_ptr][0] == "start_config":
-                            # once the box is dropped, wait until the client again requests on the /passing_service
-                            srv = True
-                            self.box_placed = False
 
-                        if task_ptr < len(task_queue)-1: task_ptr += 1
-                        if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
+                        task_ptr += 1
+                        # if task_ptr < len(task_queue)-1: task_ptr += 1
+                        # if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
+
+                        print(f"task_ptr = {task_ptr}")
 
                     ln_vel_X = self.PID_controller(error=error_x, Kp=15.0)
                     ln_vel_Y = self.PID_controller(error=error_y, Kp=15.0)
