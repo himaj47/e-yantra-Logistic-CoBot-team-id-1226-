@@ -597,6 +597,7 @@ class MoveItJointControl(Node):
                                 aruco_transforms.pop(0)
                             
                             self.box_placed = True
+                            self.is_box_attached = False
 
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             # once the box is dropped, wait until the client again requests on the /passing_service
@@ -605,14 +606,17 @@ class MoveItJointControl(Node):
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
+                            print(f"top pose goal reached = {goal_reached}")
                             if goal_reached:
                                 print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
                                 if netWrench <= self.on_air:
-                                    # self.no_box = True
                                     try:
                                         print(f"box number = {self.box_attached[-1]}")
                                         task_done[int(self.box_attached[-1])] = 0
-                                        task_ptr += 3 # or 4
+                                        print(f"after box number = {task_done[int(self.box_attached[-1])]}")
+                                        task_ptr += 3
+                                        print(f"task_ptr = {task_ptr}")
+                                        print(f"\ntask_queue = {task_queue}\n")
 
                                         self.is_box_attached = False
                                         aruco_transforms.pop(0)
