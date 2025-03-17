@@ -45,32 +45,31 @@ class NavigationDockingController(Node):
         
         
         self.receive_waypoint = [
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
         
         ]
         self.receive_waypoint1 = [
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
-            self.create_goal_pose(2.80, -2.65, 1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
         
         ]
         self.receive_waypoint2 = [
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  2.80, -2.65, 1.57
-            self.create_goal_pose(2.80, -2.65, -1.57),  # recieve pose  2.80, -2.65, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
+            self.create_goal_pose(2.55, -2.70, -1.57),  # recieve pose  2.55, -2.55, 1.57
         
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2  2.97, 1.84, -1.57
-            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2
+            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2  2.97, 1.84, -1.57
+            self.create_goal_pose(2.97, 1.84, 1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1  1.95,  -1.22, -1.57
-            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1
+            self.create_goal_pose(1.95,  -1.22, 1.57),  # Conveyor 1  1.95,  -1.22, -1.57
+            self.create_goal_pose(1.95,  -1.22, 1.57),  # Conveyor 1
         ]
-
 
 
 
@@ -81,6 +80,10 @@ class NavigationDockingController(Node):
         self.tf_buffer=Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         
+
+        self.imu=self.create_client(Trigger,'/reset_imu')
+        while not self.imu.wait_for_service(1.0):
+            self.get_logger().info(f'waiting for imu seervice ')
 
         self.drop_box=self.create_client(ServoSw,'/toggle_usb_servo')
         while not self.drop_box.wait_for_service(timeout_sec=1.0):
@@ -374,17 +377,18 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
 
 
                     if docking_success:
                         time.sleep(1.0)
-                        box_req=self.box_payload(pickup=True) 
-                        
+                        # box_req=self.box_payload(pickup=True) 
+                        # fut =self.imu.call_async(Trigger.Request())
+                        # self.get_logger().info(f'IMU Reset {fut.result()}')
                         # if box_req.success:
                         self.get_logger().info('Receive Completed Successfully ')
                         self.actions_triggered[current_waypoint-1] = True 
@@ -443,16 +447,17 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.09, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.16, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.09, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.16, rack_number='')  
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
                         time.sleep(0.8)
-                        
+                        # fut =self.imu.call_async(Trigger.Request())
+                        # self.get_logger().info(f'IMU Reset {fut.result()}')
                         passed_point =passed_point+1  # update passed point
                         self.actions_triggered[current_waypoint-1] = True
                     else:
