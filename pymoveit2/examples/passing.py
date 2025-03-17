@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -123,7 +123,7 @@ ur5_configs = {
 
 class Services(Node):
     def __init__(self):
-        super().__init__("Tf_Finder")
+        super().__init__("services")
 
         self.srv = self.create_service(SetBool, "/passing_service", self.handle_request)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
