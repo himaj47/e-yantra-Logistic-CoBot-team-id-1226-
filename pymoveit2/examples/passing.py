@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -50,12 +50,10 @@ task_queue = []
 # task_ptr: points to the current position under execution or that needs to be executed next
 task_ptr = 0
 
-# srv: shows whether or not a request for payload has been received from the ebot
-srv = False
+# # srv: shows whether or not a request for payload has been received from the ebot
+srv = True
 
 # placed: this flag shows whether or not the box is placed on the ebot
-# service handler flags
-srv = False
 placed = False
 
 # box_aruco_frame: contains the payload/box frame_id picked up by the arm 
@@ -68,6 +66,9 @@ fstat = 0
 
 # netWrench: stores EEF force status
 netWrench = 0.0
+
+# task_done: check if task done or not for a box number (0 - not done && 1 - done)
+task_done = [0]*15
 
 
 # rBoxPose: to store box_name, left box pose and its quaternion 
@@ -122,7 +123,7 @@ ur5_configs = {
 
 class Services(Node):
     def __init__(self):
-        super().__init__("Tf_Finder")
+        super().__init__("services")
 
         self.srv = self.create_service(SetBool, "/passing_service", self.handle_request)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -182,7 +183,7 @@ class TfFinder(Node):
         self.offset = 0.08
 
         # task_done: check if task done or not for a box number (0 - not done && 1 - done)
-        self.task_done = [0]*15
+        # self.task_done = [0]*15
 
         # pointers to list's indexes, to schedule tasks
         self.left_pose_ptr = -1
@@ -225,7 +226,7 @@ class TfFinder(Node):
         the function is called every 0.01 sec by ros2 timer
         '''
 
-        global aruco_transforms, signal, flag
+        global aruco_transforms, signal, flag, task_done
 
         try:
             # feedback
@@ -238,7 +239,7 @@ class TfFinder(Node):
             # check for ebot aruco marker when received a request from ebot
             if srv:
                 try:
-                    ebot_aruco = self.tf_buffer.lookup_transform(     # EEF w.r.t. base_link
+                    ebot_aruco = self.tf_buffer.lookup_transform(     # ebot aruco w.r.t. base_link
                         self.source_frame,
                         self.ebot_aruco_frame,
                         rclpy.time.Time()
@@ -251,7 +252,8 @@ class TfFinder(Node):
                     ur5_configs["drop_config"]["position"][3] = -0.1
 
                 except TransformException as ex:
-                    self.get_logger().info(f'Could not transform {self.ebot_aruco_frame} to {self.source_frame}: {ex}')
+                    # self.get_logger().info(f'Could not transform {self.ebot_aruco_frame} to {self.source_frame}: {ex}')
+                    pass
 
             # base_link to box transforms (aruco transforms) only if signal = True (i.e. when aruco_transform list is empty)
             if signal:
@@ -265,7 +267,8 @@ class TfFinder(Node):
                     for tranform in aruco_transforms:
                         box_num = int(tranform.replace("1226_base_", ""))
 
-                        if not self.task_done[box_num]:
+                        # if not self.task_done[box_num]:
+                        if not task_done[box_num]:
                             print(f"printing transform = {tranform}")
                             base_to_box = self.tf_buffer.lookup_transform(
                                                     "base_link",
@@ -291,7 +294,8 @@ class TfFinder(Node):
                                 self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
                             # this shows that task for box_num is done
-                            self.task_done[box_num] = 1
+                            # self.task_done[box_num] = 1
+                            task_done[box_num] = 1
 
                 # this means that no boxes are present
                 elif not flag:
@@ -375,6 +379,7 @@ class TfFinder(Node):
         ---
         self.get_all_frames()
         '''
+        global task_done
 
         frames_yaml = self.tf_buffer.all_frames_as_yaml()
         frames_dict = yaml.safe_load(frames_yaml)
@@ -384,7 +389,8 @@ class TfFinder(Node):
                 if frame != "1226_base_6":
                     frame_id = int(frame.replace("1226_base_", ""))
 
-                    if not self.task_done[frame_id]:
+                    # if not self.task_done[frame_id]:
+                    if not task_done[frame_id]:
                         aruco_transforms.append(frame)
 
 
@@ -409,7 +415,9 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 70.0
+        self.force_threshold = 68.0
+        self.on_air = 20.0
+        self.is_box_attached = False
 
         self.callback_group = ReentrantCallbackGroup()
 
@@ -535,35 +543,45 @@ class MoveItJointControl(Node):
         None
         '''
 
-        global task_ptr, signal, srv, placed, box_aruco_frame, netWrench
+        global task_ptr, signal, srv, placed, box_aruco_frame, netWrench, task_done
 
         if len(task_queue):
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=5.0)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=15.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
-                if self.goal_reached(error_ang_x, tolerance=0.008):
+                if self.goal_reached(error_ang_x, tolerance=0.1):
                     self.execute = False
                 
             else:
                 # only if srv is true, which is when there's a request on the service /passing_service, execute the rest of the logic
-                if srv:                
+                if srv:
+                    if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1 
                     # PID control for EEF position
-                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0]
-                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1]
+                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
+                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
+
+                    # self.is_box_attached = False
                     
                     # checking if the goal is reached
-                    if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
+                    # check which one to use "or" or "and" in if condition
+                    goal_reached = self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)
+
+                    # if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
+                    if (goal_reached or (netWrench >= self.force_threshold)):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             self.box_attached = task_queue[task_ptr][0][1:]
                             self.gripper_call(1.0)
+                            self.is_box_attached = True
+                            print("self.is_box_attached = True")
 
                         elif task_queue[task_ptr][0] == "drop_config":
+                            print("reached drop config **************")
                             self.gripper_call(0.0)
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
@@ -579,17 +597,43 @@ class MoveItJointControl(Node):
                                 aruco_transforms.pop(0)
                             
                             self.box_placed = True
-                        
+                            self.is_box_attached = False
+
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             # once the box is dropped, wait until the client again requests on the /passing_service
-                            srv = False
+                            srv = True
                             self.box_placed = False
 
-                        if task_ptr < len(task_queue)-1: task_ptr += 1
+                        # ****************************************************************************************
+                        elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
+                            print(f"top pose goal reached = {goal_reached}")
+                            if goal_reached:
+                                print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
+                                if netWrench <= self.on_air:
+                                    try:
+                                        print(f"box number = {self.box_attached[-1]}")
+                                        task_done[int(self.box_attached[-1])] = 0
+                                        print(f"after box number = {task_done[int(self.box_attached[-1])]}")
+                                        task_ptr += 3
+                                        print(f"task_ptr = {task_ptr}")
+                                        print(f"\ntask_queue = {task_queue}\n")
 
-                    ln_vel_X = self.PID_controller(error=error_x, Kp=5.0)
-                    ln_vel_Y = self.PID_controller(error=error_y, Kp=5.0)
-                    ln_vel_Z = self.PID_controller(error=error_z, Kp=7.0)
+                                        self.is_box_attached = False
+                                        aruco_transforms.pop(0)
+                                    except Exception as e:
+                                        print(f"error!! {e}")
+                                print(f"self.is_box_attached = {self.is_box_attached}")
+
+
+                        task_ptr += 1
+                        # if task_ptr < len(task_queue)-1: task_ptr += 1
+                        # if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
+
+                        # print(f"task_ptr = {task_ptr}")
+
+                    ln_vel_X = self.PID_controller(error=error_x, Kp=15.0)
+                    ln_vel_Y = self.PID_controller(error=error_y, Kp=15.0)
+                    ln_vel_Z = self.PID_controller(error=error_z, Kp=18.0)
                         
                     self.moveit2_servo(linear=(ln_vel_X, ln_vel_Y, ln_vel_Z), angular=(0.0, 0.0, 0.0)) 
 
