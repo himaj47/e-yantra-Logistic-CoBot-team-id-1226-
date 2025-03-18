@@ -575,10 +575,15 @@ class MoveItJointControl(Node):
                     if (goal_reached or (netWrench >= self.force_threshold)):
                         self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
+                            print("reached box config **************")
                             self.box_attached = task_queue[task_ptr][0][1:]
                             self.gripper_call(1.0)
                             self.is_box_attached = True
                             print("self.is_box_attached = True")
+
+                            print(f"task_queue = {task_queue}")
+                            print(f"task_ptr = {task_ptr}")
+                            print(f"box attached = {self.is_box_attached}")
 
                         elif task_queue[task_ptr][0] == "drop_config":
                             print("reached drop config **************")
@@ -599,14 +604,27 @@ class MoveItJointControl(Node):
                             self.box_placed = True
                             self.is_box_attached = False
 
+                            print(f"task_queue = {task_queue}")
+                            print(f"task_ptr = {task_ptr}")
+                            print(f"box attached = {self.is_box_attached}")
+
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
+                            print("reached start config **************")
                             # once the box is dropped, wait until the client again requests on the /passing_service
                             srv = True
                             self.box_placed = False
 
+                            print(f"task_queue = {task_queue}")
+                            print(f"task_ptr = {task_ptr}")
+                            print(f"box attached = {self.is_box_attached}")
+
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
+                            print("reached top config **************")
                             print(f"top pose goal reached = {goal_reached}")
+                            # print(f"task_queue = {task_queue}")
+                            # print(f"task_ptr = {task_ptr}")
+
                             if goal_reached:
                                 print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
                                 if netWrench <= self.on_air:
@@ -616,7 +634,6 @@ class MoveItJointControl(Node):
                                         print(f"after box number = {task_done[int(self.box_attached[-1])]}")
                                         task_ptr += 3
                                         print(f"task_ptr = {task_ptr}")
-                                        print(f"\ntask_queue = {task_queue}\n")
 
                                         self.is_box_attached = False
                                         aruco_transforms.pop(0)
