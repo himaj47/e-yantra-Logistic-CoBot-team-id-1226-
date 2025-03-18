@@ -23,7 +23,7 @@ from tf2_ros.buffer import Buffer
 import time
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Twist
-from usb_servo.srv import ServoSw
+# from usb_servo.srv import ServoSw
 from tf2_ros.transform_listener import TransformListener
 
 from std_srvs.srv import Trigger
