@@ -266,6 +266,8 @@ class TfFinder(Node):
 
                     for tranform in aruco_transforms:
                         box_num = int(tranform.replace("1226_base_", ""))
+                        box_num1 = int(tranform[-1])
+                        print(f"In TF finder: box_num = {box_num1}")
 
                         # if not self.task_done[box_num]:
                         if not task_done[box_num]:
@@ -415,7 +417,7 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 70.0
+        self.force_threshold = 68.0
         self.on_air = 20.0
         self.is_box_attached = False
 
@@ -563,7 +565,7 @@ class MoveItJointControl(Node):
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
-                    error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
+                    error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
 
                     # self.is_box_attached = False
                     
@@ -638,6 +640,7 @@ class MoveItJointControl(Node):
 
                                     self.is_box_attached = False
                                     aruco_transforms.pop(0)
+                                    signal = True
                                 except Exception as e:
                                     print(f"error!! {e}")
                             print(f"self.is_box_attached = {self.is_box_attached}")
