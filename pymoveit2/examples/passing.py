@@ -590,6 +590,7 @@ class MoveItJointControl(Node):
                             self.is_box_attached = True
                             print(f"self.is_box_attached = True, box_attached = {self.box_attached }")
                             self.entered_a_condition = True
+                            task_ptr += 1
 
                         elif task_queue[task_ptr][0] == "drop_config":
                             print("reached drop config **************")
@@ -614,6 +615,7 @@ class MoveItJointControl(Node):
                             print(f"task_ptr = {task_ptr}")
                             # print(f"box attached = {self.is_box_attached}")
                             self.entered_a_condition = True
+                            task_ptr += 1
 
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             print("reached start config **************")
@@ -625,6 +627,7 @@ class MoveItJointControl(Node):
                             print(f"task_ptr = {task_ptr}")
                             # print(f"box attached = {self.is_box_attached}")
                             self.entered_a_condition = True
+                            task_ptr += 1
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose") and goal_reached:
@@ -652,10 +655,11 @@ class MoveItJointControl(Node):
                                     print(f"error!! {e}")
                         # print(f"self.is_box_attached = {self.is_box_attached}")
                             self.entered_a_condition = True
+                            task_ptr += 1
                         
                         else: self.entered_a_condition = False
 
-                        if self.entered_a_condition: task_ptr += 1
+                        # if self.entered_a_condition: task_ptr += 1
                         # if task_ptr < len(task_queue)-1: task_ptr += 1
                         # if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1
 
