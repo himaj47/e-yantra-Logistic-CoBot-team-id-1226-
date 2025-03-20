@@ -34,6 +34,7 @@ from std_srvs.srv import SetBool
 from std_msgs.msg import Int64
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
+import time
 
 # signal: to signal when to look for new transforms
 signal = True 
@@ -266,6 +267,8 @@ class TfFinder(Node):
 
                     for tranform in aruco_transforms:
                         box_num = int(tranform.replace("1226_base_", ""))
+                        box_num1 = int(tranform[-1])
+                        print(f"In TF finder: box_num = {box_num1}")
 
                         # if not self.task_done[box_num]:
                         if not task_done[box_num]:
@@ -415,7 +418,7 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 70.0
+        self.force_threshold = 68.0
         self.on_air = 20.0
         self.is_box_attached = False
 
@@ -563,7 +566,7 @@ class MoveItJointControl(Node):
                     # PID control for EEF position
                     error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
                     error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
-                    error_z = task_queue[task_ptr][3] - EEF_link["position"][2]
+                    error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
 
                     # self.is_box_attached = False
                     
@@ -578,7 +581,7 @@ class MoveItJointControl(Node):
 
                     if (goal_reached or (netWrench >= self.force_threshold)):
                         # self.box_attached = ""
-                        print(f"task = {task_queue[task_ptr][0]}")
+                        # print(f"task = {task_queue[task_ptr][0]}")
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
                             print("reached box config **************")
                             self.box_attached = task_queue[task_ptr][0][1:]
@@ -605,9 +608,9 @@ class MoveItJointControl(Node):
                             self.box_placed = True
                             self.is_box_attached = False
 
-                            print(f"task_queue = {task_queue}")
+                            # print(f"task_queue = {task_queue}")
                             print(f"task_ptr = {task_ptr}")
-                            print(f"box attached = {self.is_box_attached}")
+                            # print(f"box attached = {self.is_box_attached}")
 
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             print("reached start config **************")
@@ -615,32 +618,35 @@ class MoveItJointControl(Node):
                             srv = True
                             self.box_placed = False
 
-                            print(f"task_queue = {task_queue}")
+                            # print(f"task_queue = {task_queue}")
                             print(f"task_ptr = {task_ptr}")
-                            print(f"box attached = {self.is_box_attached}")
+                            # print(f"box attached = {self.is_box_attached}")
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
                             print("reached top config **************")
-                            # print(f"top pose goal reached = {goal_reached}")
-                            print(f"box_attached = {self.box_attached }")
-                            # if goal_reached:
-                            # print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
-                            # print(f"is_box_attached = {self.is_box_attached}")
-                            if netWrench <= self.on_air:
-                                try:
-                                    print(f"box number = {self.box_attached[-1]}")
-                                    task_done[int(self.box_attached[-1])] = 0
-                                    print(f"after box number = {task_done[int(self.box_attached[-1])]}")
-                                    task_ptr += 3
-                                    print(f"task_ptr = {task_ptr}")
-                                    print(f"\ntask_queue = {task_queue}\n")
+                            print(f"top pose goal reached = {goal_reached}")
+                            time.sleep(0.1)
+                            # print(f"box_attached = {self.box_attached }")
+                            if goal_reached:
+                                # print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
+                                # print(f"is_box_attached = {self.is_box_attached}")
+                                if netWrench <= self.on_air:
+                                    try:
+                                        # print(f"box number = {self.box_attached[-1]}")
+                                        task_done[int(self.box_attached[-1])] = 0
+                                        # print(f"after box number = {task_done[int(self.box_attached[-1])]}")
+                                        task_ptr += 3
+                                        # print(f"task_ptr = {task_ptr}")
+                                        print(f"task_queue = {task_queue}")
 
-                                    self.is_box_attached = False
-                                    aruco_transforms.pop(0)
-                                except Exception as e:
-                                    print(f"error!! {e}")
-                            print(f"self.is_box_attached = {self.is_box_attached}")
+                                        self.is_box_attached = False
+                                        aruco_transforms.pop(0)
+                                        signal = True
+                                        print(f"aruco_transforms = {aruco_transforms}")
+                                    except Exception as e:
+                                        print(f"error!! {e}")
+                            # print(f"self.is_box_attached = {self.is_box_attached}")
 
 
                         task_ptr += 1
