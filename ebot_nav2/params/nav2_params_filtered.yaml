@@ -19,10 +19,10 @@
 amcl:
   ros__parameters:
     use_sim_time: False
-    alpha1: 0.05 # Reduce rotational noise (mainly when rotating )
-    alpha2: 1.0  # Reduce translational noise due to rotation  (when having transition x and y)
-    alpha3: 1.0  # Increase translation noise due to movement  (when having transition x and y)
-    alpha4: 0.05  # Increase rotation noise due to movement  (mainly when rotating )
+    alpha1: 0.0005 # Reduce rotational noise (mainly when rotating )
+    alpha2: 0.0005  # Reduce translational noise due to rotation  (when having transition x and y)
+    alpha3: 0.0005  # Increase translation noise due to movement  (when having transition x and y)
+    alpha4: 0.0005  # Increase rotation noise due to movement  (mainly when rotating )
     alpha5: 0.002  # Reduce noise due to backward motion
     base_frame_id: "base_footprint"
     beam_skip_distance: 0.5

@@ -95,8 +95,8 @@ def generate_launch_description():
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        # default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params.yaml'),         # with odom
-        default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params_filtered.yaml'),  # with imu sensor fusion, filtered odometry
+        default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params.yaml'),         # with odom
+        # default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params_filtered.yaml'),  # with imu sensor fusion, filtered odometry
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(

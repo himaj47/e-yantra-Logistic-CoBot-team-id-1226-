@@ -377,11 +377,11 @@ class NavigationDockingController(Node):
                 # Handle actions for the first two waypoints
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.16, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
 
 
                     if docking_success:
@@ -447,10 +447,10 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.16, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.19, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.16, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.43, orientation_angle=3.19, rack_number='')  
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:
