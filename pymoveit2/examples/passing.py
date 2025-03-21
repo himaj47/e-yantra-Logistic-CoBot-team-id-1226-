@@ -592,9 +592,7 @@ class MoveItJointControl(Node):
                             print(f"self.is_box_attached = True, box_attached = {self.box_attached }")
                             self.entered_a_condition = True
                             task_ptr += 1
-                            self.entered_a_condition = True
-                            task_ptr += 1
-
+                            
                         elif task_queue[task_ptr][0] == "drop_config":
                             print("reached drop config **************")
                             self.gripper_call(0.0)
@@ -619,8 +617,7 @@ class MoveItJointControl(Node):
                             # print(f"box attached = {self.is_box_attached}")
                             self.entered_a_condition = True
                             task_ptr += 1
-                            self.entered_a_condition = True
-                            task_ptr += 1
+                            
 
                         elif self.box_placed and task_queue[task_ptr][0] == "start_config":
                             print("reached start config **************")
@@ -647,14 +644,6 @@ class MoveItJointControl(Node):
                             # if goal_reached:
                                 # print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
                                 # print(f"is_box_attached = {self.is_box_attached}")
-                            if netWrench <= self.on_air:
-                                try:
-                                    # print(f"box number = {self.box_attached[-1]}")
-                                    task_done[int(self.box_attached[-1])] = 0
-                                    # print(f"after box number = {task_done[int(self.box_attached[-1])]}")
-                                    task_ptr += 3
-                                    # print(f"task_ptr = {task_ptr}")
-                                    print(f"task_queue = {task_queue}")
                             if netWrench <= self.on_air:
                                 try:
                                     # print(f"box number = {self.box_attached[-1]}")
