@@ -619,18 +619,19 @@ class MoveItJointControl(Node):
                             task_ptr += 1
                             
 
-                        elif self.box_placed and task_queue[task_ptr][0] == "start_config":
+                        elif task_queue[task_ptr][0] == "start_config":
                             print("reached start config **************")
-                            # once the box is dropped, wait until the client again requests on the /passing_service
-                            srv = True
-                            self.box_placed = False
+                            if self.box_placed:
+                                # once the box is dropped, wait until the client again requests on the /passing_service
+                                srv = True
+                                self.box_placed = False
+                                print("box placed on the ebot")
 
                             # print(f"task_queue = {task_queue}")
                             print(f"task_ptr = {task_ptr}")
                             # print(f"box attached = {self.is_box_attached}")
                             self.entered_a_condition = True
                             task_ptr += 1
-
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose") and goal_reached:
@@ -659,9 +660,10 @@ class MoveItJointControl(Node):
                                     print(f"aruco_transforms = {aruco_transforms}")
                                 except Exception as e:
                                     print(f"error!! {e}")
-                        # print(f"self.is_box_attached = {self.is_box_attached}")
+                            # print(f"self.is_box_attached = {self.is_box_attached}")
                             self.entered_a_condition = True
                             task_ptr += 1
+                            print("exited top pose ********")
                         
                         elif goal_reached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
                             print("reached rbTopPose config **************")
