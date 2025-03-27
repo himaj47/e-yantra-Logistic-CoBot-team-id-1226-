@@ -555,7 +555,7 @@ class MoveItJointControl(Node):
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=15.0)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=10.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
