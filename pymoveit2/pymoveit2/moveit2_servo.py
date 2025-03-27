@@ -137,7 +137,7 @@ class MoveIt2Servo:
         twist_msg.twist.angular.x *= angular[0]
         twist_msg.twist.angular.y *= angular[1]
         twist_msg.twist.angular.z *= angular[2]
-        print(twist_msg)
+        # print(twist_msg)
         self.__twist_pub.publish(twist_msg)
 
     def enable(

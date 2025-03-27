@@ -566,8 +566,12 @@ class MoveItJointControl(Node):
                 if srv:
                     if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1 
                     # PID control for EEF position
-                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
-                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
+                    # error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
+                    # error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
+                    # error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
+
+                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.025
+                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.025
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
 
                     # self.is_box_attached = False
@@ -635,9 +639,13 @@ class MoveItJointControl(Node):
 
                         # ****************************************************************************************
                         elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose") and goal_reached:
-                            time.sleep(2.0)
-                            print("reached top config **************")
-                            print(f"top pose goal reached = {goal_reached}")
+                            # print("reached top config **************")
+
+                            print(f"before sleep EEF force_val = {netWrench}")
+                            # time.sleep(1.0)
+                            time.sleep(0.5)
+                            print(f"after sleep EEF force_val = {netWrench}")
+                            # print(f"top pose goal reached = {goal_reached}")
                             # time.sleep(0.1)
                             # time.sleep(0.1)
                             # print(f"box_attached = {self.box_attached }")
@@ -648,22 +656,23 @@ class MoveItJointControl(Node):
                             if netWrench <= self.on_air:
                                 try:
                                     # print(f"box number = {self.box_attached[-1]}")
+                                    print(f"box_name = {self.box_attached}")
                                     task_done[int(self.box_attached[-1])] = 0
                                     # print(f"after box number = {task_done[int(self.box_attached[-1])]}")
                                     task_ptr += 3
                                     # print(f"task_ptr = {task_ptr}")
-                                    print(f"task_queue = {task_queue}")
 
                                     self.is_box_attached = False
                                     aruco_transforms.pop(0)
                                     signal = True
-                                    print(f"aruco_transforms = {aruco_transforms}")
                                 except Exception as e:
                                     print(f"error!! {e}")
                             # print(f"self.is_box_attached = {self.is_box_attached}")
+                            print(f"task_queue = {task_queue}, task_ptr = {task_ptr} and aruco_transforms = {aruco_transforms}")
+                            # print(f"aruco_transforms = {aruco_transforms}")
                             self.entered_a_condition = True
                             task_ptr += 1
-                            print("exited top pose ********")
+                            # print("exited top pose ********")
                         
                         elif goal_reached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
                             print("reached rbTopPose config **************")
