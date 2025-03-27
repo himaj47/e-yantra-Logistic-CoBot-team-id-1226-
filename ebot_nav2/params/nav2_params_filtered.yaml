@@ -21,9 +21,9 @@ amcl:
     use_sim_time: False
     alpha1: 0.0005  # Reduce rotational noise (mainly when rotating )
     alpha2: 0.0005  # Reduce translational noise due to rotation  (when having transition x and y)
-    alpha3: 1.0     # Increase translation noise due to movement  (when having transition x and y)
-    alpha4: 1.0     # Increase rotation noise due to movement  (mainly when rotating )
-    alpha5: 0.0002  # Reduce noise due to backward motion
+    alpha3: 1.5     # Increase translation noise due to movement  (when having transition x and y)
+    alpha4: 1.5     # Increase rotation noise due to movement  (mainly when rotating )
+    alpha5: 0.0005  # Reduce noise due to backward motion
     base_frame_id: "base_footprint"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9

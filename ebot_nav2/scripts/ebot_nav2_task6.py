@@ -56,8 +56,8 @@ class NavigationDockingController(Node):
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2  2.97, 1.84, -1.57
-            self.create_goal_pose(2.97, 1.84, -1.57),  # Conveyor 2
+            self.create_goal_pose(2.60, 1.84, -1.57),  # Conveyor 2  2.97, 1.84, -1.57
+            self.create_goal_pose(2.60, 1.84, -1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
@@ -70,7 +70,7 @@ class NavigationDockingController(Node):
         # Flags to ensure each action is triggered only once
         self.actions_triggered = [False, False,False,False,False,False]  # One per waypoint
         self.docking_in_progress = False  # Flag to track docking status
-       
+        self.reset_deg=0
         
         self.drop_box=self.create_client(ServoSw,'/toggle_usb_servo')
         while not self.drop_box.wait_for_service(timeout_sec=1.0):
@@ -95,7 +95,25 @@ class NavigationDockingController(Node):
         orientation = msg.pose.pose.orientation
         _, _, yaw = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.current_pose = (position.x, position.y, yaw)
-    
+
+
+    def initial_pose_rec_curr(self):
+        # pose=Odometry()
+        initial=PoseStamped()
+        initial.header.frame_id='map'
+        initial.header.stamp=self.navigator.get_clock().now().to_msg()
+        initial.pose.position.x=self.current_pose[0]
+        initial.pose.position.y=self.current_pose[1]
+        initial.pose.position.z=0.0
+        q=self.yaw_to_quaternion(self.reset_deg)
+        initial.pose.orientation.x=q[0]
+        initial.pose.orientation.y=q[1]
+        initial.pose.orientation.z=q[2]
+        initial.pose.orientation.w=q[3]
+        self.navigator.setInitialPose(initial)
+        self.get_logger().info(f'Set Intial Pose at Receive Pose')
+
+
     def create_goal_pose(self, x, y, yaw):
         '''
         Purpose:
@@ -384,11 +402,11 @@ class NavigationDockingController(Node):
                 if current_waypoint in [1,3,5] and not self.actions_triggered[current_waypoint-1]:
                     
                     if pose==2:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.19, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.18, rack_number='')  
                     elif pose==1:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=-0.05, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=-0.06, rack_number='')  
                     elif pose==0:
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=-0.05, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=-0.06, rack_number='')  
 
 
                     if docking_success:
@@ -396,7 +414,7 @@ class NavigationDockingController(Node):
                         fut =self.imu.call_async(Trigger.Request())
                         self.get_logger().info(f'IMU Reset {fut.result()}')
                         time.sleep(1.0)
-                        self.initial_pose_rec()
+                        self.initial_pose_rec_curr()
                         time.sleep(1.0)
                         box_req=self.box_payload(pickup=True) 
                         
@@ -459,10 +477,10 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.05, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.07, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.05, rack_number='') 
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.07, rack_number='') 
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:
@@ -471,7 +489,7 @@ class NavigationDockingController(Node):
                         fut =self.imu.call_async(Trigger.Request())
                         self.get_logger().info(f'IMU Reset {fut.result()}')
                         time.sleep(1.0)
-                        self.initial_pose_rec()
+                        self.initial_pose_rec_curr()
                         time.sleep(1.0)
                         # time.sleep(0.8)
                         
@@ -531,11 +549,11 @@ class NavigationDockingController(Node):
             if int(box[3]) % 2 == 0:
                 
                 self.get_logger().info('Going to Conveyor 1')
-                self.conveyor_pose(box,conveyor=1)
+                self.conveyor_pose(box,conveyor=2)
                 receive_pos=1
             else:
                 self.get_logger().info('Going to Conveyor 2')
-                self.conveyor_pose(box,conveyor=2)
+                self.conveyor_pose(box,conveyor=1)
                 receive_pos=0
         
         self.get_logger().info(f'Task Completed SuccessFully...')

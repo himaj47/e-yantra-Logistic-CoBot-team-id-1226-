@@ -61,6 +61,7 @@ install(PROGRAMS
   scripts/dock_task4b.py
   scripts/send_dock.py
   scripts/ebot_docking_task5.py
+  scripts/ebot_docking_us.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
