@@ -56,14 +56,14 @@ class NavigationDockingController(Node):
         ]
         
         self.conveyor2_waypoint = [
-            self.create_goal_pose(2.60, 1.84, -1.57),  # Conveyor 2  2.60, 1.84, -1.57
-            self.create_goal_pose(2.60, 1.84, -1.57),  # Conveyor 2
+            self.create_goal_pose(2.60, 1.84, 1.57),  # Conveyor 2  2.60, 1.84, -1.57
+            self.create_goal_pose(2.60, 1.84, 1.57),  # Conveyor 2
         ]
 
         self.conveyor1_waypoint=[
        
-            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1  1.95,  -1.22, -1.57
-            self.create_goal_pose(1.95,  -1.22, -1.57),  # Conveyor 1
+            self.create_goal_pose(1.95,  -1.22, 1.57),  # Conveyor 1  1.95,  -1.22, -1.57
+            self.create_goal_pose(1.95,  -1.22, 1.57),  # Conveyor 1
         ]
 
 
@@ -84,9 +84,13 @@ class NavigationDockingController(Node):
         while not self.docking_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Waiting for DockSw service...')
         
-        self.box_recieve=self.create_client(SetBool,'/passing_service')
-        while not self.box_recieve.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for box_payload  service...')
+        self.get_logger().info(f'changes done')
+        
+        # self.box_recieve=self.create_client(SetBool,'/passing_service')
+        # while not self.box_recieve.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info('Waiting for box_payload  service...')
+
+        self.box_receive=True
             
     #Function to have Current Robot Pose and Orientation
     def odometry_callback(self, msg):
@@ -438,11 +442,11 @@ class NavigationDockingController(Node):
 
                     if docking_success:
                         time.sleep(1.0)
-                        fut =self.imu.call_async(Trigger.Request())
-                        self.get_logger().info(f'IMU Reset {fut.result()}')
-                        time.sleep(1.0)
+                        # fut =self.imu.call_async(Trigger.Request())
+                        # self.get_logger().info(f'IMU Reset {fut.result()}')
+                        # time.sleep(1.0)
                         # self.initial_pose_rec()
-                        self.initial_pose_rec_curr()
+                        # self.initial_pose_rec_curr()
                         time.sleep(1.0)
                         # box_req=self.box_payload(pickup=True) 
                         
@@ -509,19 +513,19 @@ class NavigationDockingController(Node):
                   
                     if conveyor==2:
                         # docking at conveyor 2
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.07, rack_number='')  
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.13, rack_number='')  
                     elif conveyor==1:
                         # docking at conveyor 1
-                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=0.07, rack_number='') 
+                        docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.13, rack_number='') 
                             
                     # Proceed with payload drop once docking is successful
                     if docking_success:
                         time.sleep(0.8)
                         self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
-                        fut =self.imu.call_async(Trigger.Request())
-                        self.get_logger().info(f'IMU Reset {fut.result()}')
-                        time.sleep(1.0)
-                        self.initial_pose_rec_curr()
+                        # fut =self.imu.call_async(Trigger.Request())
+                        # self.get_logger().info(f'IMU Reset {fut.result()}')
+                        # time.sleep(1.0)
+                        # self.initial_pose_rec_curr()
                         time.sleep(1.0)
                         # time.sleep(0.8)
                         

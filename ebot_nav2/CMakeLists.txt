@@ -67,6 +67,8 @@ install(
   scripts/res.py
   scripts/imu.py
   scripts/ebot_nav2_test_task5.py
+  scripts/ebot_final.py
+  scripts/ebot_final_dock.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -392,6 +392,7 @@ class NavigationDockingController(Node):
         ---
         self.recieve_pose(2)
         '''
+        global box_name
         if pose==0:
             self.navigator.followWaypoints(self.receive_waypoint[:])
             print('from the conveyor2.........')
@@ -433,7 +434,16 @@ class NavigationDockingController(Node):
                             self.get_logger().info('Receive  Successfully ')
                             self.actions_triggered[current_waypoint-1] = True 
                             passed_point =passed_point+1    # update passed point
-                            return box_req.message            
+                            box_name=box_req.message
+                            return box_name  
+                        if box_req:
+                            self.get_logger().info('Not Receieve  Successfully ')
+                            self.actions_triggered[current_waypoint-1] = True 
+                            passed_point =passed_point+1    # update passed point
+                            box_name=''
+                            return box_name
+
+
                    
         
         result = self.navigator.getResult()
@@ -446,7 +456,7 @@ class NavigationDockingController(Node):
         
         
 
-    def conveyor_pose(self,box_name,conveyor):
+    def conveyor_pose(self,box_nam,conveyor):
         '''
         Purpose:
         ---
@@ -471,6 +481,8 @@ class NavigationDockingController(Node):
         ---
         self.conveyor_pose(box_name='box2', conveyor=1)
         '''
+
+        global box_name
         if conveyor==2:
           self.navigator.followWaypoints(self.conveyor2_waypoint[:])
         elif conveyor==1:
@@ -503,6 +515,7 @@ class NavigationDockingController(Node):
                         # self.initial_pose_rec_curr()
                         time.sleep(1.0)
                         # time.sleep(0.8)
+                        box_name=''
                         
                         print(self.box_dropping(pickup=True))
                         passed_point =passed_point+1  # update passed point
@@ -519,6 +532,56 @@ class NavigationDockingController(Node):
             self.get_logger().error(f'conveyor{conveyor}_pose. Navigation halted.')
             return  
         
+    def only_conv(self,conveyor):
+        global box_name
+        if conveyor==2:
+          self.navigator.followWaypoints(self.conveyor2_waypoint[:])
+        elif conveyor==1:
+          self.navigator.followWaypoints(self.conveyor1_waypoint[:])
+
+        global passed_point
+        while not self.navigator.isTaskComplete():
+            feedback = self.navigator.getFeedback()
+            if feedback:
+                # global current_waypoint
+                current_waypoint = feedback.current_waypoint+passed_point
+               
+                if current_waypoint in [1,2,3,5,4,6] and not self.actions_triggered[current_waypoint-1]:
+                    
+                  
+                    # if conveyor==2:
+                        # docking at conveyor 2
+                        # docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.14, rack_number='')  
+                    # elif conveyor==1:
+                        # docking at conveyor 1
+                        # docking_success = self.initiate_docking(target_distance=0.44, orientation_angle=3.14, rack_number='') 
+                            
+                    # Proceed with payload drop once docking is successful
+                    # if docking_success:
+                        time.sleep(0.8)
+                        self.get_logger().info(f'Docking successful. Initiating payload drop at waypoint {current_waypoint}')
+                        # fut =self.imu.call_async(Trigger.Request())
+                        # self.get_logger().info(f'IMU Reset {fut.result()}')
+                        # time.sleep(1.0)
+                        # self.initial_pose_rec_curr()
+                        time.sleep(1.0)
+                        # time.sleep(0.8)
+                        box_name=''
+                        
+                        # print(self.box_dropping(pickup=True))
+                        passed_point =passed_point+1  # update passed point
+                        self.actions_triggered[current_waypoint-1] = True
+                    # else:
+                    #     self.get_logger().error(f'Docking failed at waypoint {current_waypoint}. Aborting further operations.')
+                        # return  # Stop further execution if docking fails
+                    
+        
+        result = self.navigator.getResult()
+        if result == TaskResult.SUCCEEDED:
+            self.get_logger().info(f'conveyor{conveyor}_pose completed successfully')
+        else:
+            self.get_logger().error(f'conveyor{conveyor}_pose. Navigation halted.')
+            return  
 
     def execute_navigation(self):
         '''
@@ -545,6 +608,7 @@ class NavigationDockingController(Node):
         # self.set_initial_pose()
         self.navigator.waitUntilNav2Active()
         global passed_point
+        global box_name
        
         global total_box
         global receive_pos
@@ -552,20 +616,26 @@ class NavigationDockingController(Node):
         total_box=3
 
         passed_point=0
+        box_name=''
         
         for i in range(total_box):
            
             self.get_logger().info('Going to Receive Pose')
             box=self.recieve_pose(pose=receive_pos)
-            if int(box[3]) % 2 == 0:
-                
-                self.get_logger().info('Going to Conveyor 1')
-                self.conveyor_pose(box,conveyor=2)
-                receive_pos=1
+            if len(box)>0:
+                if int(box[3]) % 2 == 0:
+                    
+                    self.get_logger().info('Going to Conveyor 1')
+                    self.conveyor_pose(box,conveyor=2)
+                    receive_pos=1
+                else :
+                    self.get_logger().info('Going to Conveyor 2')
+                    self.conveyor_pose(box,conveyor=1)
+                    receive_pos=0
             else:
-                self.get_logger().info('Going to Conveyor 2')
-                self.conveyor_pose(box,conveyor=1)
-                receive_pos=0
+                self.only_conv(box,conveyor=1)
+                self.only_conv(box,conveyor=2)
+
         
         self.get_logger().info(f'Task Completed SuccessFully...')
        

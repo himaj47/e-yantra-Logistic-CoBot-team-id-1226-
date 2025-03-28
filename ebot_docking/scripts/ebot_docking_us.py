@@ -84,7 +84,7 @@ class MyRobotDockingController(Node):
         else:
             self.robot_orient = self.alpha * msg.data + (1 - self.alpha) * self.robot_orient
 
-        print(self.robot_orient)  # Print the filtered orientation
+        # print(self.robot_orient)  # Print the filtered orientation
        
     
     def avoid_collision_dock(self,Kp_angular , allign_error):
@@ -244,8 +244,8 @@ class MyRobotDockingController(Node):
         kd_angular = -0.0002 # Derivative gain for angular control
         max_linear_vel = 0.8
         max_angular_vel = 0.8
-        Kp_ang_wall=-2.0
-        min_error_wall=0.005
+        Kp_ang_wall=-2.1
+        min_error_wall=0.02
 
         # Angular alignment logic
         if not self.is_angular_aligned:
