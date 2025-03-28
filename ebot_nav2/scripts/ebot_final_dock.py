@@ -615,7 +615,8 @@ class NavigationDockingController(Node):
         total_box=3
 
         passed_point=0
-        
+        box_name=''
+
         for i in range(total_box):
            
             self.get_logger().info('Going to Receive Pose')
