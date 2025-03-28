@@ -52,7 +52,7 @@ task_queue = []
 task_ptr = 0
 
 # # srv: shows whether or not a request for payload has been received from the ebot
-srv = True
+srv = False
 
 # placed: this flag shows whether or not the box is placed on the ebot
 placed = False
@@ -289,12 +289,13 @@ class TfFinder(Node):
                                 self.schedule_tasks(box_pose=lBoxPose["position"][self.left_pose_ptr])
 
                             else:
-                                self.right_pose_ptr += 1
-                                box_name = "Rbox" + tranform.strip("1226_base_")
-                                lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
-
-                                rBoxPose["position"].append(lst)
-                                self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
+                                if base_to_box.transform.translation.x <= 0.050 and base_to_box.transform.translation.y >= -0.80:
+                                    box_name = "Rbox" + tranform.strip("1226_base_")
+                                    self.right_pose_ptr += 1
+                                    lst = [box_name, base_to_box.transform.translation.x, base_to_box.transform.translation.y, base_to_box.transform.translation.z]
+                                    print(f"list = {lst}")
+                                    rBoxPose["position"].append(lst)
+                                    self.schedule_tasks(box_pose=rBoxPose["position"][self.right_pose_ptr])
 
                             # this shows that task for box_num is done
                             # self.task_done[box_num] = 1
@@ -419,7 +420,7 @@ class MoveItJointControl(Node):
         self.box_attached = ""
 
         # EEF force threshold
-        self.force_threshold = 68.0
+        self.force_threshold = 70.0
         self.on_air = 13.0
         self.is_box_attached = False
         self.entered_a_condition = False
@@ -554,7 +555,7 @@ class MoveItJointControl(Node):
             if self.execute:
                 # PID control for EEF orientation
                 error_ang_x = ur5_configs["start_config"]["euler_angles"][0] - EEF_link["euler_angles"][0]
-                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=15.0)
+                ang_vel_Y = self.PID_controller(error=error_ang_x, Kp=10.0)
                 
                 self.moveit2_servo(linear=(0.0, 0.0, 0.0), angular=(0.0, ang_vel_Y, 0.0))
 
@@ -566,35 +567,32 @@ class MoveItJointControl(Node):
                 if srv:
                     if task_ptr >= len(task_queue): task_ptr = len(task_queue)-1 
                     # PID control for EEF position
-                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
-                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
+                    # error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.05 
+                    # error_y = task_queue[task_ptr][2] - EEF_link["position"][1] - 0.05
+                    # error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
+
+                    error_x = task_queue[task_ptr][1] - EEF_link["position"][0] - 0.02
+                    error_y = task_queue[task_ptr][2] - EEF_link["position"][1] + 0.04
                     error_z = task_queue[task_ptr][3] - EEF_link["position"][2] - 0.05
 
                     # self.is_box_attached = False
                     
                     # checking if the goal is reached
                     # check which one to use "or" or "and" in if condition
-                    goal_reached = self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)
+                    # goal_reached = self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)
 
                     # if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
 
                     # if task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose":
                     #     print(f"goal reached = {goal_reached} and task_ptr = {task_ptr}")
 
-                    if (goal_reached or (netWrench >= self.force_threshold)):
-                        # self.box_attached = ""
-                        # print(f"task = {task_queue[task_ptr][0]}")
+                    if ((self.goal_reached(error_x, tolerance=0.02) and self.goal_reached(error_y, tolerance=0.02) and self.goal_reached(error_z, tolerance=0.02)) or (netWrench >= self.force_threshold)):
+                        self.box_attached = ""
                         if (task_queue[task_ptr][0][0] == "L") or (task_queue[task_ptr][0][0] == "R"):
-                            print("reached box config **************")
                             self.box_attached = task_queue[task_ptr][0][1:]
                             self.gripper_call(1.0)
-                            self.is_box_attached = True
-                            print(f"self.is_box_attached = True, box_attached = {self.box_attached }")
-                            self.entered_a_condition = True
-                            task_ptr += 1
-                            
+
                         elif task_queue[task_ptr][0] == "drop_config":
-                            print("reached drop config **************")
                             self.gripper_call(0.0)
 
                             # updating this to True, returns the response to the client with a message that the box is placed on the ebot
@@ -608,68 +606,15 @@ class MoveItJointControl(Node):
                             else:
                                 # removing transforms when the task is done
                                 aruco_transforms.pop(0)
-
-                            self.box_placed = True
-                            self.is_box_attached = False
-
-                            # print(f"task_queue = {task_queue}")
-                            print(f"task_ptr = {task_ptr}")
-                            # print(f"box attached = {self.is_box_attached}")
-                            self.entered_a_condition = True
-                            task_ptr += 1
                             
-
-                        elif task_queue[task_ptr][0] == "start_config":
-                            print("reached start config **************")
-                            if self.box_placed:
-                                # once the box is dropped, wait until the client again requests on the /passing_service
-                                srv = True
-                                self.box_placed = False
-                                print("box placed on the ebot")
-
-                            # print(f"task_queue = {task_queue}")
-                            print(f"task_ptr = {task_ptr}")
-                            # print(f"box attached = {self.is_box_attached}")
-                            self.entered_a_condition = True
-                            task_ptr += 1
-
-                        # ****************************************************************************************
-                        elif self.is_box_attached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose") and goal_reached:
-                            time.sleep(2.0)
-                            print("reached top config **************")
-                            print(f"top pose goal reached = {goal_reached}")
-                            # time.sleep(0.1)
-                            # time.sleep(0.1)
-                            # print(f"box_attached = {self.box_attached }")
-                            # if goal_reached:
-                            # if goal_reached:
-                                # print(f"reached top pose -> netWrench = {netWrench}, on_air = {self.on_air}, is_box_attached = {self.is_box_attached}")
-                                # print(f"is_box_attached = {self.is_box_attached}")
-                            if netWrench <= self.on_air:
-                                try:
-                                    # print(f"box number = {self.box_attached[-1]}")
-                                    task_done[int(self.box_attached[-1])] = 0
-                                    # print(f"after box number = {task_done[int(self.box_attached[-1])]}")
-                                    task_ptr += 3
-                                    # print(f"task_ptr = {task_ptr}")
-                                    print(f"task_queue = {task_queue}")
-
-                                    self.is_box_attached = False
-                                    aruco_transforms.pop(0)
-                                    signal = True
-                                    print(f"aruco_transforms = {aruco_transforms}")
-                                except Exception as e:
-                                    print(f"error!! {e}")
-                            # print(f"self.is_box_attached = {self.is_box_attached}")
-                            self.entered_a_condition = True
-                            task_ptr += 1
-                            print("exited top pose ********")
+                            self.box_placed = True
                         
-                        elif goal_reached and (task_queue[task_ptr][0] == "rbTopPose" or task_queue[task_ptr][0] == "lbTopPose"):
-                            print("reached rbTopPose config **************")
-                            task_ptr += 1
+                        elif self.box_placed and task_queue[task_ptr][0] == "start_config":
+                            # once the box is dropped, wait until the client again requests on the /passing_service
+                            srv = False
+                            self.box_placed = False
 
-                        else: self.entered_a_condition = False
+                        if task_ptr < len(task_queue)-1: task_ptr += 1
 
                         # if self.entered_a_condition: task_ptr += 1
                         # if task_ptr < len(task_queue)-1: task_ptr += 1
